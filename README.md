@@ -15,5 +15,5 @@ Credits and Special Thanks
 ============================================
 - All the developer guys from the ScummVM (https://github.com/scummvm/scummvm) team, and especially the ones involved in the implementation of the BladeRunner engine for ScummVM (madmoose, peterkohaut, sev and everyone else).
 - The information provided in this blog (http://westwoodbladerunner.blogspot.ca) by Michael Liebscher.
-- The creator of br-mixer (https://github.com/bdamer/br-mixer), who also has a blog entry about the game resource file formats (http://afqa123.com/2015/03/07/deciphering-blade-runner/)
+- The creator of br-mixer (https://github.com/bdamer/br-mixer), Ben Damer, who also has a blog entry about the game resource file formats (http://afqa123.com/2015/03/07/deciphering-blade-runner/)
 - Any beta testers :)

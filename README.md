@@ -9,7 +9,7 @@ Note: This tool is depended on the output of another 3rd party program (br-mixer
 
 * A tool to process the aforementioned Excel file with the dialogue transcriptions and output a text resource file (TRE) that can be used by the game's engine. Currently, a modified version of the ScummVM's BladeRunner engine is required for this external TRE file to work in-game. Multiple TRE files should be created in order to fully support subtitles in the game. One TRE file will include all in-game spoken quotes, and the rest of them are one TRE file per VQA video sequence which includes voice acting.  
 
-* A tool to support the creation of a font file (FON) for use with (currently) a version modified ScummVM BladeRunner engine in order to resolve various issues with the available fonts (included in the game's own resource files). These issues include alignment, kerning, limited charset and unsupported characters -- especially for languages with too many non-latin symbols in their alphabet. The current plan is to base this tool's code off the the Monkey Island Special Edition's Translator.
+* A tool to support the creation of a font file (FON) for use with (currently) a modified version of ScummVM's BladeRunner engine (WIP) in order to resolve various issues with the available fonts (included in the game's own resource files). These issues include alignment, kerning, corrupted format, limited charset and unsupported characters -- especially for languages with too many non-latin symbols in their alphabet. The current plan is to base this font tool's code off the Monkey Island Special Edition's Translator (https://github.com/ShadowNate/MISETranslator).
 
 Credits and Special Thanks
 ============================================

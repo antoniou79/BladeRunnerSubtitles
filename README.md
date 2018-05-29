@@ -38,16 +38,19 @@ The overrideEncoding.txt is a text file that contains the following:
     * Don't use space(s) between the tuples!
 
 There are six (6) mandatory launch arguments for the fontCreator tool:
-1. imageRowPNGFilename: is the filename of the input PNG image file which should contain a row of (preferably) tab separated glyphs. Keep in mind that:
+1. imageRowPNGFilename: is the filename of the input PNG image file which should contain a row of (preferably) tab separated glyphs. Example: "Tahoma_18ShdwTranspThreshZero003-G5.png". Keep in mind that:
     * The first glyph should be repeated here too, as in the overrideEncoding.txt file.
 	* Background should be transparent.
 	* [TBC] all colors used in the character glyphs should not have any transparency value (eg from Gimp 2, set Layer->Transparency->Threshold alpha to 0).
     * If you use special glyphs that are not in the specified ascii codepage (eg ñ, é, í, â don't appear in the Greek codepage), then in this image file you should use the actual special glyphs at the position of the placeholder characters you've had in the overrideEncoding.txt file
-2. targetFONfilename: [TODO]
-3. minSpaceBetweenLettersInRowLeftToLeft: [TODO]
-4. minSpaceBetweenLettersInColumnTopToTop: [TODO]
-5. kerningForFirstDummyFontGlyph: [TODO]
-6. whiteSpaceWidthPx: [TODO]
+2. targetFONfilename: Example: "SUBTITLES.FON". Keep in mind that:
+    * As of yet only the SUBTITLES.FON is supported by a modified (non-official) version of the BladeRunner ScummVM engine.
+3. minSpaceBetweenLettersInRowLeftToLeft: This is a length (positive integer) in pixels that indicates the __minimum__ distance between the left-most side of a glyph and the left-most side of the immediate subsequent glyph in the input image PNG (row of glyphs) file.
+This basically tells the tool how far (in the x axis) it can search for pixels that belong to the same glyph). You can input an approximate value here and adjust it based on the output of the tool (the tool should be able to detect ALL the glyphs in the PNG row image file and it will report how many it detected in its output)
+4. minSpaceBetweenLettersInColumnTopToTop: This is a positive integer in pixels that indicates the __minimum__ distance between the top-most pixel of a glyph and the top-most pixel of a glyph on another row of the input image file.
+It is highly recommended though that the input image file should contain only a single row of glyphs and this value should be higher than the maximum height among the glyphs, typically this should be set to approximately double the maximum height of glyph.
+5. kerningForFirstDummyFontGlyph: This is an integer that explicitly indicates the kerning, ie offset in pixels (on the x-axis) of the first glyph (the one that is repeated twice). This can be measured by observing the indent that your image processing app adds when you enter the first glyph (typically it should be only a few pixels)
+6. whiteSpaceWidthPx: This is a positive integer value that sets the width in pixels for the single white space between words for the subtitles in-game.
 
 # Credits and Special Thanks
 - All the developer guys from the ScummVM (https://github.com/scummvm/scummvm) team, and especially the ones involved in the implementation of the BladeRunner engine for ScummVM (madmoose, peterkohaut, sev and everyone else).

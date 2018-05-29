@@ -771,16 +771,17 @@ class grabberFromPNG:
 # ########################
 # main
 # sys.argv[1] filename of our png with row of fonts in same directory
-# TODO MAYBE ADD Target .FON filename
 # sys.argv[2] TMPTargetFONfilename
 # sys.argv[3] TMPminSpaceBetweenLettersInRowLeftToLeft
 # sys.argv[4] TMPminSpaceBetweenLettersInColumnTopToTop
+# sys.argv[5] TMPkerningForFirstDummyFontLetter
+# sys.argv[6] TMPSpaceWidthInPixels
 #
 # #########################
 #
 if __name__ == '__main__':
 #    main()
-    print "Usage: grabberFromPNG imageRowPNGFilename targetFONfilename minSpaceBetweenLettersInRowLeftToLeft minSpaceBetweenLettersInColumnTopToTop kerningForFirstDummyFontLetter spaceWidthInPixels" # deductKerningPixels"
+    print "Usage: grabberFromPNG imageRowPNGFilename targetFONfilename minSpaceBetweenLettersInRowLeftToLeft minSpaceBetweenLettersInColumnTopToTop kerningForFirstDummyFontLetter whiteSpaceWidthInPixels" # deductKerningPixels"
     if len(sys.argv) == 7:
 #        TMPreconstructEntireFont = False if (int(sys.argv[6]) == 0) else True
 #        TMPreconstructEntireFont = True #hardcoded to true for Blade Runner

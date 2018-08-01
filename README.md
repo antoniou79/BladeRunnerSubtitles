@@ -10,6 +10,11 @@ Note: This tool is depended on the output of another 3rd party program (br-mixer
 
 ## mixResourceCreator (packBladeRunnerMIXFromPCTLKXLS-##)
 A tool to process the aforementioned Excel file with the dialogue transcriptions and output text resource files (TRE) that will be packed along with the external font (see fontCreator tool) into a SUBTITLES.MIX file. Currently, a modified version of the ScummVM's BladeRunner engine is required for this MIX file to work in-game. Multiple TRE files will be created intermediately in order to fully support subtitles in the game. One TRE file includes all in-game spoken quotes and the rest of them correspond to any VQA video sequence that contain voice acting.
+Usage:
+```
+python2.7 packBladeRunnerMIXFromPCTLKXLS-04.py -x <excelWithTranscriptSheets.xls>
+```
+The tool __requires__ the actornames.txt file, which is included in the samples folder, to be in the same folder as the tool's source (.py) file.
 
 ## fontCreator (grabberFromPNG##BR)
 A tool to support the creation of a font file (FON) for use with (currently) a modified version of ScummVM's BladeRunner engine (WIP) in order to resolve various issues with the available fonts (included in the game's own resource files). These issues include alignment, kerning, corrupted format, limited charset and unsupported characters -- especially for languages with too many non-latin symbols in their alphabet.

@@ -71,7 +71,7 @@ class grabberFromPNG:
     BR_GameID = 3
     BR_Desc = 'Blade Runner'
     BR_CodeName = 'BLADERUNNER'
-    BR_DefaultFontFileName = 'SUBTITLES.FON'
+    BR_DefaultFontFileName = 'SUBTLS_E.FON'
 
     defaultSpaceWidthInPixelsConst = 0x0007 #0x0008  #0x0006
     spaceWidthInPixels = defaultSpaceWidthInPixelsConst

@@ -8,7 +8,7 @@ A tool to gather all the speech audio filenames in an Excel file including a col
 Prerequisite: extraction of the audio files in WAV format using a modified version of the br-mixer tool. This Excel file should help transcribe all the spoken (in-game) quotes. It also provides extra quote information such as the corresponding actor ID and quote ID.
 Note: This tool is depended on the output of another 3rd party program (br-mixer, which is also a bit modified). Additionally, a lot of extra information has been added to the output Excel file, such as whether a quote is unused or untriggered, who the quote refers to (when applicable), as well as extra quotes that are not separate Audio files (AUD) in the game's archives but are part of a video file (VQA). Therefore, this tool is provided here mostly for archiving purposes.
 
-## mixResourceCreator (TBD)
+## mixResourceCreator (packBladeRunnerMIXFromPCTLKXLS-##)
 A tool to process the aforementioned Excel file with the dialogue transcriptions and output text resource files (TRE) that will be packed along with the external font (see fontCreator tool) into a SUBTITLES.MIX file. Currently, a modified version of the ScummVM's BladeRunner engine is required for this MIX file to work in-game. Multiple TRE files will be created intermediately in order to fully support subtitles in the game. One TRE file includes all in-game spoken quotes and the rest of them correspond to any VQA video sequence that contain voice acting.
 
 ## fontCreator (grabberFromPNG##BR)

@@ -3,11 +3,17 @@
 # Blade Runner (1997) Subtitles Support
 Some tools written in Python 2.7 to help add support for subtitles in Westwood's point and click adventure game Blade Runner (1997) for PC.
 
-## QuotesSpreadsheetCreator (TBD)
-(requires python lib *xlwt*)
-A tool to gather all the speech audio filenames in an Excel file including a column with links to the audio file location on the PC.
-Prerequisite: extraction of the audio files in WAV format using a modified version of the br-mixer tool. This Excel file should help transcribe all the spoken (in-game) quotes. It also provides extra quote information such as the corresponding actor ID and quote ID.
-Note: This tool is depended on the output of another 3rd party program (br-mixer, which is also a bit modified). Additionally, a lot of extra information has been added to the output Excel file, such as whether a quote is unused or untriggered, who the quote refers to (when applicable), as well as extra quotes that are not separate Audio files (AUD) in the game's archives but are part of a video file (VQA). Therefore, this tool is provided here mostly for archiving purposes.
+## quotesSpreadsheetCreator (sortBladeRunnerWavs##)
+(requires python lib *xlwt*, *wave*)
+A tool to gather all the speech audio filenames in an Excel file which will include a column with links to the audio file location on the PC. By Ctrl+MouseClick on that column's entries you should be able to listen to the corresponding wav file.
+The output excel file *out.xls* should help with the transcription of all the spoken *in-game* quotes. It also provides extra quote information such as the corresponding actor ID and quote ID per quote.
+Note: A lot of extra information has been added to the output Excel file maintained for the English transcription, such as whether a quote is unused or untriggered, the person a quote refers to (when applicable), as well as extra quotes that are not separate Audio files (AUD) in the game's archives but are part of a video file (VQA). Therefore, this tool is provided here mostly for archiving purposes.
+Usage:
+```
+python2.7 sortBladeRunnerWavs02.py -ip <folderpath_for_TLK_Files> -op <folderpath_for_extracted_wav_Files> -m <stringPathToReplaceFolderpathInExcelLinks>
+```
+The tool __requires__ the actornames.txt file, which is included in the samples folder, to be in the same folder as the tool's source (.py) file.
+
 
 ## mixResourceCreator (packBladeRunnerMIXFromPCTLKXLS-##)
 (requires python lib *xlrd*)
@@ -51,8 +57,8 @@ There are six (6) mandatory launch arguments for the fontCreator tool:
 	* Background should be transparent.
 	* [TBC] all colors used in the character glyphs should not have any transparency value (eg from Gimp 2, set Layer->Transparency->Threshold alpha to 0).
     * If you use special glyphs that are not in the specified ascii codepage (eg ñ, é, í, â don't appear in the Greek codepage), then in this image file you should use the actual special glyphs at the position of the placeholder characters you've had in the overrideEncoding.txt file
-2. targetFONfilename: Example: "SUBTITLES.FON". Keep in mind that:
-    * As of yet only the SUBTITLES.FON is supported by a modified (non-official) version of the BladeRunner ScummVM engine.
+2. targetFONfilename: Example: "SUBTLS_E.FON". Keep in mind that:
+    * As of yet only the SUBTLS_E.FON is supported by a modified (non-official) version of the BladeRunner ScummVM engine.
 3. minSpaceBetweenLettersInRowLeftToLeft: This is a length (positive integer) in pixels that indicates the __minimum__ distance between the left-most side of a glyph and the left-most side of the immediate subsequent glyph in the input image PNG (row of glyphs) file.
 This basically tells the tool how far (in the x axis) it can search for pixels that belong to the same glyph). You can input an approximate value here and adjust it based on the output of the tool (the tool should be able to detect ALL the glyphs in the PNG row image file and it will report how many it detected in its output)
 4. minSpaceBetweenLettersInColumnTopToTop: This is a positive integer in pixels that indicates the __minimum__ distance between the top-most pixel of a glyph and the top-most pixel of a glyph on another row of the input image file.

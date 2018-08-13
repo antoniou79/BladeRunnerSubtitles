@@ -4,9 +4,8 @@
 # Created by Praetorian (ShadowNate) for Classic Adventures in Greek
 # classic.adventures.in.greek@gmail.com
 # Works with Excel version outSpeech-15-06-2018-1856-TranslatingComms-080.xls and above
-# TODO Allow no Fonts file
+#
 # TODO Support at least one translation too (ie Greek)
-# TODO Show (print) the quotes that have long length
 #
 import os, sys, shutil
 import ctypes
@@ -288,8 +287,9 @@ def inputXLS(filename):
 			numOfSpokenQuotes = xl_sheet.nrows - 2 # all rows minus the first TWO rows with headers
 			print ('num of spoken quotes: %d' % numOfSpokenQuotes)
 			# stats for debug
+			extremeQuotesList = []
 			longestLength = 0
-			someLengthThreshold = 145
+			predefinedLengthThreshold = 145
 			quoteNumAboveThreshold = 0
 			# end of stats for debug
 
@@ -351,7 +351,8 @@ def inputXLS(filename):
 							curStrStartOffset += (len(newQuoteReplaceSpecialsAscii) + 1)
 							if ( longestLength < len(newQuoteReplaceSpecialsAscii)):
 								longestLength = len(newQuoteReplaceSpecialsAscii)
-							if ( someLengthThreshold < len(newQuoteReplaceSpecialsAscii)):
+							if ( predefinedLengthThreshold < len(newQuoteReplaceSpecialsAscii)):
+								extremeQuotesList.append((tmpQuoteID, newQuoteReplaceSpecialsAscii))							
 								quoteNumAboveThreshold += 1
 								#print ('row_idx %d. tag %s = quoteId [%d], length: %d: %s' % (row_idx, twoTokensfirstColSplitAtDotXLS[0], tmpQuoteID, len(newQuoteReplaceSpecialsAscii), newQuoteReplaceSpecialsAscii))
 					#
@@ -376,10 +377,13 @@ def inputXLS(filename):
 							curStrStartOffset += (len(newQuoteReplaceSpecialsAscii) + 1)
 							if ( longestLength < len(newQuoteReplaceSpecialsAscii)):
 								longestLength = len(newQuoteReplaceSpecialsAscii)
-							if ( someLengthThreshold < len(newQuoteReplaceSpecialsAscii)):
+							if ( predefinedLengthThreshold < len(newQuoteReplaceSpecialsAscii)):
+								extremeQuotesList.append((tmpQuoteID, newQuoteReplaceSpecialsAscii))
 								quoteNumAboveThreshold += 1
 			tableOfStringOffsets.append(curStrStartOffset) # the final extra offset entry
-			print 'Longest Length = %d, quotes above threshold (%d): %d' % (longestLength, someLengthThreshold, quoteNumAboveThreshold)			
+			print 'Longest Length = %d, quotes above threshold (%d): %d' % (longestLength, predefinedLengthThreshold, quoteNumAboveThreshold)			
+			for extremQuotTuple in extremeQuotesList:
+				print "Id: %d, Q: %s" % (extremQuotTuple[0], extremQuotTuple[1])
 			#
 			# WRITE TO TRE FILE
 			#

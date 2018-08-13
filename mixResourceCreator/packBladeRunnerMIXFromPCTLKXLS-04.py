@@ -4,6 +4,10 @@
 # Created by Praetorian (ShadowNate) for Classic Adventures in Greek
 # classic.adventures.in.greek@gmail.com
 # Works with Excel version outSpeech-15-06-2018-1856-TranslatingComms-080.xls and above
+# TODO Allow no Fonts file
+# TODO Support at least one translation too (ie Greek)
+# TODO Show (print) the quotes that have long length
+#
 import os, sys, shutil
 import ctypes
 import csv
@@ -144,9 +148,7 @@ def outputMIX():
 		#												Note that the offsets are relative to the start of the body so to find the 
 		#												actual offset in the MIX you have to add the size of the header which is  
 		#												(6 + (12 * NumFiles))
-		numOfFiles = len(supportedDialogueSheets) + len(supportedOtherFilesForMix)
-		numOfFilesToWrite = pack('h',numOfFiles)  # short 2 bytes
-		outMIXFile.write(numOfFilesToWrite)
+		
 		#
 		# ID column should in ascending order in MIX FILES (the engine uses binary sort to search for files)
 		# so order the files based on ID hash
@@ -164,19 +166,27 @@ def outputMIX():
 		mixFileEntries = []
 		totalFilesDataSize = 0
 		currOffsetForDataSegment = 0 # we start after header and table of index entries, from 0, (but this means that when reading the offset we need to add 6 + numOfFiles * 12). This does not concern us though.
-		for sheetDialogueName in supportedDialogueSheets:
+		for sheetDialogueName in supportedDialogueSheets:		
 			sheetDialogueNameTRE =	sheetDialogueName[:-4] + '.TRE'
-			entryID = calculateFoldHash(sheetDialogueNameTRE)
-			mixEntryfileSizeBytes = os.path.getsize('./' + sheetDialogueNameTRE)
-			mixFileEntries.append((entryID, sheetDialogueNameTRE, mixEntryfileSizeBytes))
-			totalFilesDataSize += mixEntryfileSizeBytes
+			if os.path.isfile('./' + sheetDialogueNameTRE):
+				entryID = calculateFoldHash(sheetDialogueNameTRE)
+				mixEntryfileSizeBytes = os.path.getsize('./' + sheetDialogueNameTRE)
+				mixFileEntries.append((entryID, sheetDialogueNameTRE, mixEntryfileSizeBytes))
+				totalFilesDataSize += mixEntryfileSizeBytes
 		for otherFileName in supportedOtherFilesForMix:
-			entryID = calculateFoldHash(otherFileName)
-			mixEntryfileSizeBytes = os.path.getsize('./' + otherFileName)
-			mixFileEntries.append((entryID, otherFileName, mixEntryfileSizeBytes))
-			totalFilesDataSize += mixEntryfileSizeBytes
+			if os.path.isfile('./' + otherFileName):
+				entryID = calculateFoldHash(otherFileName)
+				mixEntryfileSizeBytes = os.path.getsize('./' + otherFileName)
+				mixFileEntries.append((entryID, otherFileName, mixEntryfileSizeBytes))
+				totalFilesDataSize += mixEntryfileSizeBytes
 		mixFileEntries.sort(key=getSortMixFilesKey)
-
+		#
+		# We write num of files here. After we verified they exist
+		#
+		numOfFiles = len(mixFileEntries)
+		numOfFilesToWrite = pack('h',numOfFiles)  # short 2 bytes
+		outMIXFile.write(numOfFilesToWrite)
+				
 		# This is just the data segment (after the entries index table). Adds up all the file sizes here
 		totalFilesDataSizeToWrite = pack('I',totalFilesDataSize)  # unsigned integer 4 bytes
 		outMIXFile.write(totalFilesDataSizeToWrite)

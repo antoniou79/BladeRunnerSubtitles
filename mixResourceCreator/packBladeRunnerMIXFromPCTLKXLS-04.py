@@ -15,16 +15,25 @@ import xlrd
 from xlrd import *
 # for pack
 from struct import *
-
-# encoding=utf8
-#reload(sys)
-#sys.setdefaultencoding('utf8')
+import re
 
 company_email = "classic.adventures.in.greek@gmail.com"
 app_version = "0.60"
 app_name = "packBladeRunnerMIXFromPCTLKXLS"
 app_name_spaced = "Get a TRE file from spoken in-game quotes"
 numOfSpokenQuotes = 0
+
+origEncoding = 'windows-1252'
+defaultTargetEncoding = 'windows-1252'
+defaultTargetEncodingUnicode = unicode(defaultTargetEncoding, 'utf-8')
+targetEncoding = ''
+targetEncodingUnicode = ''
+
+overrideEncodingTextFile = u'overrideEncoding.txt'
+relPath = u'.'
+overrideEncodingFileRelPath = os.path.join(relPath,overrideEncodingTextFile)
+
+
 # DONE ADD ALL SHEETS NEEDED FROM THE XLS
 supportedDialogueSheets = ['INGQUO_E.TRE', 'WSTLGO_E.VQA', 'BRLOGO_E.VQA', 'INTRO_E.VQA', 'MW_A_E.VQA', 'MW_B01_E.VQA', 'MW_B02_E.VQA', 'MW_B03_E.VQA', 'MW_B04_E.VQA', 'MW_B05_E.VQA', 'INTRGT_E.VQA', 'MW_D_E.VQA', 'MW_C01_E.VQA', 'MW_C02_E.VQA', 'MW_C03_E.VQA', 'END04A_E.VQA', 'END04B_E.VQA', 'END04C_E.VQA', 'END06_E.VQA', 'END01A_E.VQA', 'END01B_E.VQA', 'END01C_E.VQA', 'END01D_E.VQA', 'END01E_E.VQA', 'END01F_E.VQA', 'END03_E.VQA']
 supportedOtherFilesForMix = ['SUBTLS_E.FON']
@@ -33,9 +42,92 @@ tableOfStringIds = []
 tableOfStringOffsets = []
 tableOfStringEntries = []
 
+# this list is used in order to replace the actual indices of characters with delegate font indices (ASCII indexes of the target code-page) which have been used during the font creation (or exist in in the internal TAHOMA font)
+# contains tuples of two values. First value is actual Utf char, the second is a replacement ASCII char
+listOfOutOfOrderGlyphs = []
+
 actorPropertyEntries = []
 actorPropertyEntriesWasInit = False
 
+def initOverrideEncoding():
+	global targetEncoding
+
+	overrideFailed = True
+	try:
+		if os.access(overrideEncodingFileRelPath, os.F_OK):
+			overEncodFile = open(overrideEncodingFileRelPath, 'r')
+			linesLst = overEncodFile.readlines()
+			overEncodFile.close()
+			if linesLst is None or len(linesLst) == 0:
+				overrideFailed = True
+			else:
+				print "Override Encoding Info: "
+				involvedTokensLst =[]
+				for readEncodLine in linesLst:
+					tmplineTokens = re.findall("[^\t\n]+",readEncodLine )
+					for x in tmplineTokens:
+						involvedTokensLst.append(x)
+				if len(involvedTokensLst) >= 2:
+					targetEncodingUnicode = unicode(involvedTokensLst[0], 'utf-8')
+					targetEncoding = unicode.encode("%s" % targetEncodingUnicode, origEncoding)
+					if(len(involvedTokensLst) >=5):
+						#print "(out-of-order glyphs):", involvedTokensLst[4]
+						if(involvedTokensLst[4] != '-'):
+							# split at comma, then split at ':' and store tuples of character
+							explicitOutOfOrderGlyphsTokenUnicode = unicode(involvedTokensLst[4], 'utf-8') # unicode(involvedTokensLst[4], 'utf-8')
+							#explicitOutOfOrderGlyphsTokenStr =  unicode.encode("%s" % explicitOutOfOrderGlyphsTokenUnicode, targetEncoding)
+							#explicitOutOfOrderGlyphsTokenStr =  explicitOutOfOrderGlyphsTokenUnicode.decode(targetEncoding) # unicode.encode("%s" % explicitOutOfOrderGlyphsTokenUnicode, 'utf-8')
+							tokensOfOutOfOrderGlyphsStrList = explicitOutOfOrderGlyphsTokenUnicode.split(',')
+							for tokenX in tokensOfOutOfOrderGlyphsStrList:
+								tokensOfTupleList = tokenX.split(':')
+								listOfOutOfOrderGlyphs.append( (unichr(ord(tokensOfTupleList[0])), unichr(ord(tokensOfTupleList[1]))) )
+					overrideFailed = False
+				else:
+					overrideFailed = True
+	except:
+		print "Error while trying to access file for encoding info: %s" % (overrideEncodingFileRelPath)
+		raise
+		overrideFailed = True
+	if 	overrideFailed == True:
+		targetEncoding = defaultTargetEncoding
+		print "Could not find proper override encoding info in: %s" % (overrideEncodingFileRelPath)
+		print "Proceeding with encoding defaults..."
+	#
+	#
+	# additional check
+	if targetEncoding is None or targetEncoding == '':
+		targetEncoding = defaultTargetEncoding
+	print "Target encoding: %s" % (targetEncoding)
+	#
+	if(len(listOfOutOfOrderGlyphs) == 0):
+		listOfOutOfOrderGlyphs.append((u'\xed', u'\u0386')) # spanish i (si)
+		listOfOutOfOrderGlyphs.append((u'\xf1', u'\xa5')) # spanish n (senor)
+		listOfOutOfOrderGlyphs.append((u'\xe2', u'\xa6')) # a for (liver) pate
+		listOfOutOfOrderGlyphs.append((u'\xe9', u'\xa7')) # e for (liver) pate
+	print "Explicit Out Of Order Glyphs List: " , listOfOutOfOrderGlyphs
+	# arrange list properly:
+	# check if the list contains same item as key and value (in different pairs)
+	# if such case then the pair with the key should preceed the pair with the value matched,
+	# to avoid replacing instances of a special character (key) with a delegate (value) that will be later replaced again due to the second pair
+	#
+	while (True):
+		foundMatchingPairs = False
+		for glyphDelegItA in listOfOutOfOrderGlyphs:
+			for glyphDelegItB in listOfOutOfOrderGlyphs:
+				if (glyphDelegItA[1] == glyphDelegItB[0] and  listOfOutOfOrderGlyphs.index(glyphDelegItA) < listOfOutOfOrderGlyphs.index(glyphDelegItB)):
+					# swap
+					itamA, itamB = listOfOutOfOrderGlyphs.index(glyphDelegItA), listOfOutOfOrderGlyphs.index(glyphDelegItB)
+					listOfOutOfOrderGlyphs[itamB], listOfOutOfOrderGlyphs[itamA] = listOfOutOfOrderGlyphs[itamA], listOfOutOfOrderGlyphs[itamB]
+					foundMatchingPairs = True
+					break
+			if (foundMatchingPairs == True):
+				break
+		if(foundMatchingPairs == False):
+			break # the whole while loop
+	print "Arranged Glyphs Delegates List: " , listOfOutOfOrderGlyphs
+	return
+
+#
 # Fill the actorPropertyEntries table
 def initActorPropertyEntries():
 	global actorPropertyEntriesWasInit
@@ -108,11 +200,12 @@ def calculateFoldHash(strFileName):
 				groupSum |= (ord(strParam[i]) << 24)
 				i += 1
 			else: # if	i >= lenFileName  but still haven't completed the four byte loop add 0s
-				groupSum |= 0			
+				groupSum |= 0
 		hash = ((hash << 1) | ((hash >> 31) & 1)) + groupSum
 	hash &= 0xFFFFFFFF	   # mask here!
 	print (strParam +': '  +''.join('{:08X}'.format(hash)))
 	return hash
+
 #
 # aux - sort by first object in list of tuples
 def getSortMixFilesKey(item):
@@ -128,7 +221,7 @@ def outputMIX():
 	#calculateFoldHash('AR02-MIN.SET')
 	#calculateFoldHash('CLOVDIES.AUD')
 	#calculateFoldHash('INTRO.VQA')
-	
+
 	errorFound = False
 	outMIXFile = None
 	try:
@@ -144,10 +237,10 @@ def outputMIX():
 		#			4 bytes: Byte offset in Data Segment
 		#			4 bytes: Byte length of entry data
 		# TODO *Data Segment* - contains the file data. Offset from Entry Descriptors does not include header segment byte length.
-		#												Note that the offsets are relative to the start of the body so to find the 
-		#												actual offset in the MIX you have to add the size of the header which is  
+		#												Note that the offsets are relative to the start of the body so to find the
+		#												actual offset in the MIX you have to add the size of the header which is
 		#												(6 + (12 * NumFiles))
-		
+
 		#
 		# ID column should in ascending order in MIX FILES (the engine uses binary sort to search for files)
 		# so order the files based on ID hash
@@ -165,7 +258,7 @@ def outputMIX():
 		mixFileEntries = []
 		totalFilesDataSize = 0
 		currOffsetForDataSegment = 0 # we start after header and table of index entries, from 0, (but this means that when reading the offset we need to add 6 + numOfFiles * 12). This does not concern us though.
-		for sheetDialogueName in supportedDialogueSheets:		
+		for sheetDialogueName in supportedDialogueSheets:
 			sheetDialogueNameTRE =	sheetDialogueName[:-4] + '.TRE'
 			if os.path.isfile('./' + sheetDialogueNameTRE):
 				entryID = calculateFoldHash(sheetDialogueNameTRE)
@@ -185,11 +278,11 @@ def outputMIX():
 		numOfFiles = len(mixFileEntries)
 		numOfFilesToWrite = pack('h',numOfFiles)  # short 2 bytes
 		outMIXFile.write(numOfFilesToWrite)
-				
+
 		# This is just the data segment (after the entries index table). Adds up all the file sizes here
 		totalFilesDataSizeToWrite = pack('I',totalFilesDataSize)  # unsigned integer 4 bytes
 		outMIXFile.write(totalFilesDataSizeToWrite)
-		
+
 		print ("Sorted Entries based on EntryId")
 		for mixFileEntry in mixFileEntries:
 			print (''.join('{:08X}'.format(mixFileEntry[0])) + ': ' + mixFileEntry[1] + ' : ' + ''.join('{:08X}'.format(mixFileEntry[2])))
@@ -216,7 +309,7 @@ def outputMIX():
 			else:
 				print ("Error while reading in ENTRY file")
 				break
-			
+
 		outMIXFile.close()
 	return
 #
@@ -238,23 +331,55 @@ def outputMIX():
 	#DONE manually I've replaced all one-char '...' with three dots
 	# TODO actors TRE has 0x49 entries, (73 names), but table of ids has 73 entries BUT the offset table (first offset is calced + 0x04, so from end of the first 4 count bytes) has 74 entries. The last entry indexes the end of file (!)
 	# TODO all strings are NULL terminated in the TRE file!
-	
+
 def translateQuoteToAsciiProper(cellObj):
 	newQuoteReplaceSpecials =  cellObj.value.encode("utf-8")
 	#print ('Encoded to unicode: %s ' % (newQuoteReplaceSpecials))
-	newQuoteReplaceSpecials = newQuoteReplaceSpecials.decode("utf-8").replace(u"\u0386", u"\u00A3")	 # greek alpha tonomeno -- TODO which character is this in the excel (utf value) ???
-	newQuoteReplaceSpecials = newQuoteReplaceSpecials.replace(u"\u00ed", u"\u00A2")	 # spanish i
-	newQuoteReplaceSpecials = newQuoteReplaceSpecials.replace(u"\u00f1", u"\u00A5")	 # spanish n
-	#newQuoteReplaceSpecials = newQuoteReplaceSpecials.replace(u"\u00A4", u"\u00A5")  # spanish n
-	newQuoteReplaceSpecials = newQuoteReplaceSpecials.replace(u"\u00e2", u"\u00A6")	 # a from pate -- todo this is not confirmed in-game font (but it is in our external font as of	 yet)
-	newQuoteReplaceSpecials = newQuoteReplaceSpecials.replace(u"\u00e9", u"\u00A7")	 # e from pate -- todo this is not confirmed in-game font (but it is in our external font as of	 yet)
+	newQuoteReplaceSpecials = newQuoteReplaceSpecials.decode("utf-8")
+
+	#newQuoteReplaceSpecials = newQuoteReplaceSpecials.replace(u"\u0386", u"\u00A3")
+	for repTuple in listOfOutOfOrderGlyphs:
+		newQuoteReplaceSpecials = newQuoteReplaceSpecials.replace(repTuple[0], repTuple[1])
+	# WORKAROUND, we re-replace the spanish i delegate again here!
+#	newQuoteReplaceSpecials = newQuoteReplaceSpecials.replace(u'\xa2', u'\u0386')   # this is needed for spanish i because in utf-8 it's actually the u'\u0386' that's assigned to A tonomeno which is the delegate.
+#	newQuoteReplaceSpecials = newQuoteReplaceSpecials.replace(u"\u0386", u"\u00A3")
+#	#newQuoteReplaceSpecials = newQuoteReplaceSpecials.replace(u"\u0386", u"\u00A3")	 # greek alpha tonomeno -- TODO which character is this in the excel (utf value) ???
+#	newQuoteReplaceSpecials = newQuoteReplaceSpecials.replace(u"\u00ed", u"\u00A2")	 # spanish i
+#	newQuoteReplaceSpecials = newQuoteReplaceSpecials.replace(u"\u00f1", u"\u00A5")	 # spanish n
+#	#newQuoteReplaceSpecials = newQuoteReplaceSpecials.replace(u"\u00A4", u"\u00A5")  # spanish n
+#	newQuoteReplaceSpecials = newQuoteReplaceSpecials.replace(u"\u00e2", u"\u00A6")	 # a from pate -- todo this is not confirmed in-game font (but it is in our external font as of	 yet)
+#	newQuoteReplaceSpecials = newQuoteReplaceSpecials.replace(u"\u00e9", u"\u00A7")	 # e from pate -- todo this is not confirmed in-game font (but it is in our external font as of	 yet)
+	# other replacements.
 	newQuoteReplaceSpecials = newQuoteReplaceSpecials.replace(u"\u2019", u"\u0027")	 # right single quote
 	newQuoteReplaceSpecials = newQuoteReplaceSpecials.replace(u"\u2018", u"\u0027")	 # left single quote
 	newQuoteReplaceSpecials = newQuoteReplaceSpecials.replace(u"\u2026", u"\u002e\u002e\u002e")	 # three dots together (changes length)
 	newQuoteReplaceSpecials = newQuoteReplaceSpecials.replace(u"\u201D", u"\u0022")	 # right double quote
 	newQuoteReplaceSpecials = newQuoteReplaceSpecials.replace(u"\u201C", u"\u0022")	 # left double quote
 	# TODO? replace new line ???	with another char (maybe |)?
-	return newQuoteReplaceSpecials.encode("windows-1252")
+
+	#newQuoteReplaceSpecialsUnicode = unicode(newQuoteReplaceSpecials, 'utf-8')
+	#newQuoteReplaceSpecialsStr = unicode.encode("%s" % newQuoteReplaceSpecials, targetEncoding)
+
+	#print type(newQuoteReplaceSpecials)                 # type is unicode
+	#print type(newQuoteReplaceSpecials.encode('utf-8')) # type is str
+#	print targetEncoding
+#	print newQuoteReplaceSpecials
+#	newQuoteReplaceSpecialsDec = newQuoteReplaceSpecials.decode(targetEncoding)
+	newQuoteReplaceSpecialsRetStr = ''
+	newQuoteReplaceSpecialsRetStr = newQuoteReplaceSpecials.encode(targetEncoding)
+#	try:
+#		newQuoteReplaceSpecialsRetStr = newQuoteReplaceSpecials.encode(targetEncoding)
+#	except:
+#		print "==============================================================================="
+#		print "==============================================================================="
+#		print "ERROR:"
+#		print newQuoteReplaceSpecials
+#		print newQuoteReplaceSpecials.encode(targetEncoding, errors='xmlcharrefreplace')
+#		print "==============================================================================="
+#		print "==============================================================================="
+#		newQuoteReplaceSpecialsRetStr = newQuoteReplaceSpecials.encode(targetEncoding, errors='xmlcharrefreplace')
+	return newQuoteReplaceSpecialsRetStr
+#	return newQuoteReplaceSpecialsEnStr
 
 
 def inputXLS(filename):
@@ -316,7 +441,7 @@ def inputXLS(filename):
 			del tableOfStringOffsets[:]
 			for row_idx in range(2, xl_sheet.nrows):
 				#print "Line %d" % (row_idx)
-				for col_idx in range(0, xl_sheet.ncols):  
+				for col_idx in range(0, xl_sheet.ncols):
 					cell_obj = xl_sheet.cell(row_idx, col_idx)
 					#
 					# FOR IN-GAME QUOTES -- Iterate through columns starting from col 0. We need cols: 0, 2
@@ -344,7 +469,7 @@ def inputXLS(filename):
 							newQuoteReplaceSpecialsAscii = translateQuoteToAsciiProper(cell_obj)
 							#if switchFlagShowQuote == True:
 							#	 print ('length: %d: %s' % (len(newQuoteReplaceSpecialsAscii), newQuoteReplaceSpecialsAscii))
-							#	 print ':'.join(x.encode('hex') for x in newQuoteReplaceSpecialsAscii)	 # seems to work.  new chars are non-printable but exist in string
+							#print ':'.join(x.encode('hex') for x in newQuoteReplaceSpecialsAscii)	 # seems to work.  new chars are non-printable but exist in string
 
 							tableOfStringEntries.append(newQuoteReplaceSpecialsAscii)
 							tableOfStringOffsets.append(curStrStartOffset)
@@ -352,14 +477,14 @@ def inputXLS(filename):
 							if ( longestLength < len(newQuoteReplaceSpecialsAscii)):
 								longestLength = len(newQuoteReplaceSpecialsAscii)
 							if ( predefinedLengthThreshold < len(newQuoteReplaceSpecialsAscii)):
-								extremeQuotesList.append((tmpQuoteID, newQuoteReplaceSpecialsAscii))							
+								extremeQuotesList.append((tmpQuoteID, newQuoteReplaceSpecialsAscii))
 								quoteNumAboveThreshold += 1
 								#print ('row_idx %d. tag %s = quoteId [%d], length: %d: %s' % (row_idx, twoTokensfirstColSplitAtDotXLS[0], tmpQuoteID, len(newQuoteReplaceSpecialsAscii), newQuoteReplaceSpecialsAscii))
 					#
 					# FOR VQAs -- Iterate through columns starting from col 2. We need cols: 2, 9, 10
 					#
 					elif mode == 2:
-						if(col_idx == 2): # subtitle text							 
+						if(col_idx == 2): # subtitle text
 							newQuoteReplaceSpecialsAscii = translateQuoteToAsciiProper(cell_obj)
 							#print ('length: %d: %s' % (len(newQuoteReplaceSpecialsAscii), newQuoteReplaceSpecialsAscii))
 							#print ':'.join(x.encode('hex') for x in newQuoteReplaceSpecialsAscii)	# seems to work.  new chars are non-printable but exist in string
@@ -370,7 +495,7 @@ def inputXLS(filename):
 						elif(col_idx == 10): # endFrame
 							tmpEndFrame = int(cell_obj.value)
 							tmpQuoteID = tmpStartFrame | (tmpEndFrame << 16) # top 16 bits are end frame (up to 65536 frames which is enough) and low 16 bits are startFrame
-							
+
 							tableOfStringIds.append(tmpQuoteID)
 							tableOfStringEntries.append(newQuoteReplaceSpecialsAscii)
 							tableOfStringOffsets.append(curStrStartOffset)
@@ -381,7 +506,7 @@ def inputXLS(filename):
 								extremeQuotesList.append((tmpQuoteID, newQuoteReplaceSpecialsAscii))
 								quoteNumAboveThreshold += 1
 			tableOfStringOffsets.append(curStrStartOffset) # the final extra offset entry
-			print 'Longest Length = %d, quotes above threshold (%d): %d' % (longestLength, predefinedLengthThreshold, quoteNumAboveThreshold)			
+			print 'Longest Length = %d, quotes above threshold (%d): %d' % (longestLength, predefinedLengthThreshold, quoteNumAboveThreshold)
 			for extremQuotTuple in extremeQuotesList:
 				print "Id: %d, Q: %s" % (extremQuotTuple[0], extremQuotTuple[1])
 			#
@@ -427,6 +552,7 @@ def inputXLS(filename):
 if __name__ == "__main__":
 	pathToQuoteExcelFile = ""
 	invalidSyntax = False
+
 #	 print "Len of sysargv = %s" % (len(sys.argv))
 	if len(sys.argv) == 2:
 		if(sys.argv[1] == '--help'or sys.argv[1] == '-h'):
@@ -449,7 +575,7 @@ if __name__ == "__main__":
 		elif(sys.argv[1] == '--version' or sys.argv[1] == '-v'):
 			print "%s %s supports Blade Runner (English version, CD edition)." % (app_name_spaced, app_version)
 			print "Please provide any feedback to: %s " % (company_email)
-		else:	
+		else:
 			invalidSyntax = True
 	elif len(sys.argv) == 3:
 		if(sys.argv[1] == '-x'):
@@ -461,6 +587,10 @@ if __name__ == "__main__":
 			invalidSyntax = True
 
 		if not invalidSyntax:
+			# parse any overrideEncoding file if exists:
+			initOverrideEncoding()
+
+
 			# parse the EXCEL File
 			# parse Actors files:
 			initActorPropertyEntries()

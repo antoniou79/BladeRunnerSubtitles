@@ -33,11 +33,15 @@
 #
 # Let's assume an Input image with only a row of all character glyphs (no double rows...)
 # BLADE RUNNER:
+# TODO: A way to export game fonts to png image (in order to be able to create new expanded fonts keeping glyph consistency!)
+#           Also override the corruption in TAHOMA18 while exporting
+# TODO: Test if we can have partial transparency
 # TODO: Re-Check the order of fonts in (in-game resource font files) TAHOMA18 (stored corrupted) and TAHOMA24 (in good condition).
 # TODO: print a warning for mismatch of number of letters in encoding override (or internal) and detected fonts in ROW IMAGE (especially if we expect a double exclamation mark at the start - and we ignoring one of the two)
-# TODO: maybe test greek subs too.
 # TODO: A more detailed readme for this tool and how to use it
-# TODO: enforce overrideEncoding.txt -- this tool should no longer work without one
+#
+# DONE: enforce overrideEncoding.txt -- this tool should no longer work without one
+# DONE: Test greek subs too
 # DONE: Letter fonts should be spaced by TAB when copied into GIMP or other app to create the image row of all character glyphs
 # DONE: First character should be repeated in the ROW file (but taken into consideration once) in order to get the pixels for the TAB space between letters (left-start column to left-start column)
 # DONE: Use the tab space pixels to calculate the KERNING for each letter (x offset)
@@ -697,7 +701,7 @@ class grabberFromPNG:
 						# Fonts are written from TOP to Bottom, Left to Right. Each pixel is 16 bit (2 bytes). Highest bit seems to determine transparency (on/off flag).
 						#
 						# There seem to be 5 bits per RGB channel and the value is the corresponding 8bit value (from the 24 bit pixel color) shifting out (right) the 3 LSBs
-						# NOTE: Since we can't have transparency at channel level, it's best to have the input PNG not have transparent colored pixels (in Gimp merge the font layers, foreground and shadow and then from Layer settings set transparency threshold to 0 for that layer)- keep the background transparent!
+						# NOTE: Since we can't have transparency at channel level(?), it's best to have the input PNG not have transparent colored pixels (in Gimp merge the font layers, foreground and shadow and then from Layer settings set transparency threshold to 0 for that layer)- keep the background transparent!
 						#
 						# First font image is the special character (border of top row and left column) - color of font pixels should be "0x7FFF" for filled and "0x8000" for transparent
 						#

@@ -572,9 +572,11 @@ if __name__ == "__main__":
 			print "--------------------"
 			print "Thank you for using this app."
 			print "Please provide any feedback to: %s " % (company_email)
+			sys.exit()
 		elif(sys.argv[1] == '--version' or sys.argv[1] == '-v'):
 			print "%s %s supports Blade Runner (English version, CD edition)." % (app_name_spaced, app_version)
 			print "Please provide any feedback to: %s " % (company_email)
+			sys.exit()
 		else:
 			invalidSyntax = True
 	elif len(sys.argv) == 3:

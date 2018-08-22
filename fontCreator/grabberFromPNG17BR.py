@@ -55,9 +55,43 @@
 # DONE: make space pixels (var spaceWidthInPixels) into an external param?
 
 import os, sys, shutil
+from os import walk, errno
 import Image
 from struct import *
 import re
+import os.path
+from fonFileLib import *
+
+company_email = "classic.adventures.in.greek@gmail.com"
+app_version = "0.50"
+app_name = "grabberFromPNGHHBR"
+app_name_spaced = "Extract or create Font Files (.FON) for Blade Runner"
+
+
+supportedMIXInputFiles = ['STARTUP.MIX']
+## 4 font files
+supportedExportedFONFiles = ['10PT.FON', 'TAHOMA18.FON', 'TAHOMA24.FON', 'KIA6PT.FON']
+
+def calculateFoldHash(strFileName):
+	i = 0
+	hash = 0
+	strParam = strFileName.upper()
+	lenFileName = len(strParam);
+	while i < lenFileName and i < 12:
+		groupSum = 0
+		# work in groups of 4 bytes
+		for j in range(0, 4):
+			# LSB first, so the four letters in the string are re-arranged (first letter goes to lower place)
+			groupSum >>= 8;
+			if (i < lenFileName):
+				groupSum |= (ord(strParam[i]) << 24)
+				i += 1
+			else: # if	i >= lenFileName  but still haven't completed the four byte loop add 0s
+				groupSum |= 0
+		hash = ((hash << 1) | ((hash >> 31) & 1)) + groupSum
+	hash &= 0xFFFFFFFF	   # mask here!
+	#print (strParam +': '  +''.join('{:08X}'.format(hash)))
+	return hash
 
 class grabberFromPNG:
 	origEncoding = 'windows-1252'
@@ -86,6 +120,7 @@ class grabberFromPNG:
 	kerningForFirstDummyFontLetter = 0
 #	 deductKerningPixels = 0
 
+	inputFonMixPath = ""
 	targetFONFilename = BR_DefaultFontFileName
 #	 origFontFilename=""
 	origFontPropertiesTxt = ""
@@ -248,6 +283,7 @@ class grabberFromPNG:
 #		 self.deductKerningPixels = 0
 		self.reconstructEntireFont = False # TODO : True?
 		#self.origFontFilename=porigFontFilename
+		self.inputFonMixPath = ""
 		self.targetFONFilename = self.BR_DefaultFontFileName
 		self.copyFontFileName = ""
 		self.copyPNGFileName=""
@@ -299,6 +335,10 @@ class grabberFromPNG:
 ##
 ## SETTERS
 ##
+	def setInputPathForFonMix(self, pInputMixPath):
+		self.inputFonMixPath = pInputMixPath
+		return
+
 	def setImageRowFilePNG(self, pimageRowFilePNG):
 		self.imageRowFilePNG = pimageRowFilePNG
 		return
@@ -437,7 +477,7 @@ class grabberFromPNG:
 #
 #
 	def generateModFiles(self, customBaselineOffs):
-		""" Generate extended png and font files (work on copies, not the originals). Return values: 0 no errors, -1 output font file has alrady new letters, -2 no fonts found in png (TODO: more error cases)
+		""" Generate font (FON) files (work on copies, not the originals). Return values: 0 no errors, -1 output font file has alrady new letters, -2 no fonts found in png (TODO: more error cases)
 		"""
 		#
 		# When a customBaselineOffs is set, we should expand the space for the letter (otherwise it will be overflown in the next line or truncated (outside the png)
@@ -791,48 +831,210 @@ class grabberFromPNG:
 				retVal = -2
 		return (retVal, errMsg, origGameFontSizeEqBaseLine, totalFontLetters, importedNumOfLetters)
 
+	def extractFonFilesFromMix(self):
+		""" Generate PNG files out of FON files stores in a MIX resource
+		"""
+		print "Checking in %s for MIX files to extract FON's from" % (self.inputFonMixPath)
+		inputMIXFilesFound = []
+		# breaking after first for loop yields only the top directory files, which is what we want
+		for (dirpath, dirnames, filenames) in walk(self.inputFonMixPath):
+			for filename in filenames:
+				for mixFileName in supportedMIXInputFiles:
+					if filename.upper() == mixFileName:
+						inputMIXFilesFound.append(mixFileName)
+			break
+		for tmpMIXfileName in inputMIXFilesFound:
+			print "Found MIX: %s" % ('"' + self.inputFonMixPath + tmpMIXfileName + '"')
+			errorFound = False
+			inMIXFile = None
+			#
+			try:
+				inMIXFile = open(os.path.join(self.inputFonMixPath,tmpMIXfileName), 'rb')
+			except:
+				errorFound = True
+				print "Unexpected error:", sys.exc_info()[0]
+				raise
+			if not errorFound:
+				totalFONs = 0
+				tmpBuff = inMIXFile.read(2)
+				# H: unsigned short (2 bytes) followed by I: unsigned int (4 bytes)
+				mixFileEntriesNumTuple = struct.unpack('H', tmpBuff)
+				numOfEntriesToExtract = mixFileEntriesNumTuple[0]
+				tmpBuff = inMIXFile.read(4)
+				mixFileDataSegmentSizeTuple = struct.unpack('I', tmpBuff)
+				allMixFileSize = mixFileDataSegmentSizeTuple[0]
+				inMIXFile.seek(0, 2) # go to file end
+				allActualBytesInMixFile = inMIXFile.tell()
+				inMIXFile.seek(6, 0) # go to start of table of MIX file entries (right after the 6 bytes header)
+				# 2 + 4 = 6 bytes short MIX header
+				# 12 bytes per MIX entry in entries table
+				# quick size validation
+				print "Entries: %d, data segment %d bytes" % (numOfEntriesToExtract, allMixFileSize)
+				if allActualBytesInMixFile != 2 + 4 + 12 * numOfEntriesToExtract + allMixFileSize:
+					print "Error: MIX file size mismatch with reported size in header for %s!" % (tmpMIXfileName)
+				else:
+					#
+					# 12 bytes per entry
+					#		4 bytes: ID
+					#		4 bytes: Offset in data segment
+					#		4 bytes: Size of data
+					#
+					for i in range(0, numOfEntriesToExtract):
+						foundFONFile = False
+						currFonFileName = 'UNKNOWN.FON'
+						inMIXFile.seek(2 + 4 + 12*i)
+						tmpBuff = inMIXFile.read(4)
+						tmpRdTuple = struct.unpack('I', tmpBuff)
+						idOfMIXEntry = tmpRdTuple[0]
+						tmpBuff = inMIXFile.read(4)
+						tmpRdTuple = struct.unpack('I', tmpBuff)
+						offsetOfMIXEntry = tmpRdTuple[0]
+						tmpBuff = inMIXFile.read(4)
+						tmpRdTuple = struct.unpack('I', tmpBuff)
+						sizeOfMIXEntry = tmpRdTuple[0]
+
+						for suppFONFileName in supportedExportedFONFiles:
+							if(idOfMIXEntry == calculateFoldHash(suppFONFileName)):
+								foundFONFile = True
+								currFonFileName = suppFONFileName
+								break
+
+						if (foundFONFile == True):
+							print "Entry Name: %s, Entry ID: %s, offset %s, data segment %s bytes" % (currFonFileName, ''.join('{:08X}'.format(idOfMIXEntry)), ''.join('{:08X}'.format(offsetOfMIXEntry)),''.join('{:08X}'.format(sizeOfMIXEntry)))
+							#
+							# IF FON FILE:
+							# put file in FON object
+							#
+							#
+							inMIXFile.seek(2 + 4 + 12*numOfEntriesToExtract + offsetOfMIXEntry)
+							if(offsetOfMIXEntry + sizeOfMIXEntry > allMixFileSize):
+								print "Error: FON file size mismatch with reported size in entry header!"
+							else:
+								fonFileBuffer = inMIXFile.read(sizeOfMIXEntry)
+								if (len(fonFileBuffer) == sizeOfMIXEntry):
+								# load FON file
+									thisFonFile = fonFile()
+									if (thisFonFile.loadFonFile(fonFileBuffer, allMixFileSize, currFonFileName)):
+										print "FON file loaded"
+										thisFonFile.outputFonToPNG()
+										totalFONs = totalFONs + 1
+									else:
+										print "Error while LOADING FON file!"
+								else:
+									print "Error while reading FON file %s into mem buffer" % (''.join('{:08X}'.format(idOfTREEntry)))
+
+				inMIXFile.close()
+				print "Total FONs: %d " % (totalFONs)
+		return
 
 #
 #
 # ########################
 # main
-# sys.argv[1] filename of our png with row of fonts in same directory
-# sys.argv[2] TMPTargetFONfilename
-# sys.argv[3] TMPminSpaceBetweenLettersInRowLeftToLeft
-# sys.argv[4] TMPminSpaceBetweenLettersInColumnTopToTop
-# sys.argv[5] TMPkerningForFirstDummyFontLetter
-# sys.argv[6] TMPSpaceWidthInPixels
 #
 # #########################
 #
 if __name__ == '__main__':
-#	 main()
-	print "Usage: grabberFromPNG imageRowPNGFilename targetFONfilename minSpaceBetweenLettersInRowLeftToLeft minSpaceBetweenLettersInColumnTopToTop kerningForFirstDummyFontLetter whiteSpaceWidthInPixels" # deductKerningPixels"
-	if len(sys.argv) == 7:
-#		 TMPreconstructEntireFont = False if (int(sys.argv[6]) == 0) else True
-#		 TMPreconstructEntireFont = True #hardcoded to true for Blade Runner
-		TMPimageRowFilePNG = sys.argv[1]
-		TMPTargetFONfilename = sys.argv[2]
-		TMPminSpaceBetweenLettersInRowLeftToLeft = int(sys.argv[3])
-		TMPminSpaceBetweenLettersInColumnTopToTop = int(sys.argv[4])
-		TMPkerningForFirstDummyFontLetter = int(sys.argv[5])
-		TMPSpaceWidthInPixels = int(sys.argv[6])
-#		 TMPdeductKerningPixels = int(sys.argv[7])
-		TMPcustomBaseLineOffset = 0
-		myGrabInstance = grabberFromPNG('windows-1253') #, grabberFromPNG.BR_GameID)
+#	main()
+	invalidSyntax = False
+	extractFonMode = False
+
+	TMPinputPathForMixFiles = ""
+	TMPimageRowFilePNG = ""
+	TMPTargetFONfilename = ""
+	TMPminSpaceBetweenLettersInRowLeftToLeft = 0
+	TMPminSpaceBetweenLettersInColumnTopToTop = 0
+	TMPkerningForFirstDummyFontLetter = 0
+	TMPSpaceWidthInPixels = 10
+#	TMPdeductKerningPixels = 0
+	TMPcustomBaseLineOffset = 0
+
+#	 print "Len of sysargv = %s" % (len(sys.argv))
+	if len(sys.argv) == 2:
+		if(sys.argv[1] == '--help'or sys.argv[1] == '-h'):
+			print "%s %s supports Blade Runner (English version, CD edition)." % (app_name_spaced, app_version)
+			print "Created by Praetorian of the classic adventures in Greek team."
+			print "Always keep backups!"
+			print "--------------------"
+			print "Preparatory steps:"
+			print "1. Put overrideEncoding.txt file in the same folder with this tool. (Recommended, but not obligatory step)"
+			print "--------------------"
+			print "Valid syntax A:"
+			print "%s -ip [folderpath_for_MIX_Files]\n" % (app_name)
+			print "Valid syntax B:"
+			print "%s -im [image_Row_PNG_Filename] -om [output_FON_filename] -pxLL [minSpaceBetweenLettersInRowLeftToLeft] -pxTT [minSpaceBetweenLettersInColumnTopToTop] -pxKn [kerningForFirstDummyFontLetter] -pxWS [whiteSpaceWidthInPixels]\n" % (app_name)    # deductKerningPixels"
+			print "The -ip switch has an argument that is the path for the input (MIX) files folder (can be the same as the Blade Runner installation folder)."
+			print "The -im switch has an argument that is the input PNG image with a row of the font glyphs spaced apart."
+			print "The -om switch has an argument that is the output FON filename."
+			print "The -pxLL switch has an integer argument that specifies the minimum number of pixels between the left side of a glyph and the left side of the next glyph to its right in the line-row PNG."
+			print "The -pxTT switch has an integer argument that specifies the minimum number of pixels between the top side of a glyph and the top side of the glyph below (if there's a second row) in the row PNG. If there is only one row, this argument still should be set (as if there was another row) to define where the parser should stop checking for the limits of a glyph vertically."
+			print "The -pxKn switch has an integer argument that sets kerning for the first dummy font glyph."
+			print "The -pxWS switch has an integer argument that sets the white space width in pixels for this particular font."
+			print "--------------------"
+			print "Thank you for using this app."
+			print "Please provide any feedback to: %s " % (company_email)
+			sys.exit()
+		elif(sys.argv[1] == '--version' or sys.argv[1] == '-v'):
+			print "%s %s supports Blade Runner (English version, CD edition)." % (app_name_spaced, app_version)
+			print "Please provide any feedback to: %s " % (company_email)
+			sys.exit()
+		else:
+			invalidSyntax = True
+	elif len(sys.argv) > 2:
+		for i in range(1, len(sys.argv)):
+			if( i < (len(sys.argv) - 1) and sys.argv[i][:1] == '-' and sys.argv[i+1][:1] != '-'):
+				if (sys.argv[i] == '-ip'):
+					TMPinputPathForMixFiles = sys.argv[i+1]
+					extractFonMode = True
+					print "Original FON file extraction mode enabled."
+				elif (sys.argv[i] == '-im'):
+					TMPimageRowFilePNG = sys.argv[i+1]
+				elif (sys.argv[i] == '-om'):
+					TMPTargetFONfilename = sys.argv[i+1]
+				elif (sys.argv[i] == '-pxLL'):
+					TMPminSpaceBetweenLettersInRowLeftToLeft = int(sys.argv[i+1])
+				elif (sys.argv[i] == '-pxTT'):
+					TMPminSpaceBetweenLettersInColumnTopToTop = int(sys.argv[i+1])
+				elif (sys.argv[i] == '-pxKn'):
+					TMPkerningForFirstDummyFontLetter = int(sys.argv[i+1])
+				elif (sys.argv[i] == '-pxWS'):
+					TMPSpaceWidthInPixels = int(sys.argv[i+1])
+		if (extractFonMode == False) and (not TMPTargetFONfilename or not TMPimageRowFilePNG or TMPminSpaceBetweenLettersInRowLeftToLeft <= 0 or TMPminSpaceBetweenLettersInColumnTopToTop <= 0 or TMPkerningForFirstDummyFontLetter <= 0 or TMPSpaceWidthInPixels <= 0)  : # this argument is mandatory
+			invalidSyntax = True
+
+		if (extractFonMode == True) and ( (TMPinputPathForMixFiles == '')  ):
+			invalidSyntax = True
+	else:
+		invalidSyntax = True
+
+
+	if (invalidSyntax == False):
+		#myGrabInstance = grabberFromPNG('windows-1253') #, grabberFromPNG.BR_GameID)
+		myGrabInstance = grabberFromPNG()
+		myGrabInstance.setInputPathForFonMix(TMPinputPathForMixFiles)
 		myGrabInstance.setImageRowFilePNG(TMPimageRowFilePNG)
 		myGrabInstance.setTargetFONFilename(TMPTargetFONfilename)
 		myGrabInstance.setMinSpaceBetweenLettersInRowLeftToLeft(TMPminSpaceBetweenLettersInRowLeftToLeft)
 		myGrabInstance.setMinSpaceBetweenLettersInColumnTopToTop(TMPminSpaceBetweenLettersInColumnTopToTop)
 		myGrabInstance.setKerningForFirstDummyFontLetter(TMPkerningForFirstDummyFontLetter)
 		myGrabInstance.setSpaceWidthInPixels(TMPSpaceWidthInPixels)
-#		 myGrabInstance.setDeductKerningPixels(TMPdeductKerningPixels)
-#		 myGrabInstance.setReconstructEntireFont(TMPreconstructEntireFont)
-
-		myGrabInstance.generateModFiles(TMPcustomBaseLineOffset)
+#		myGrabInstance.setDeductKerningPixels(TMPdeductKerningPixels)
+		if extractFonMode:
+			myGrabInstance.extractFonFilesFromMix()
+		else:
+			myGrabInstance.generateModFiles(TMPcustomBaseLineOffset)
 	else:
-		print "Invalid syntax! ..."
-#		 myGrabInstance = grabberFromPNG('windows-extra') #, grabberFromPNG.BR_GameID)
+		invalidSyntax = True
+
+	if invalidSyntax == True:
+		print "Invalid syntax\n Try: \n %s -op [folderpath_for_extracted_wav_Files] \n %s --help for more info \n %s --version for version info " % (app_name, app_name, app_name)
+		tmpi = 0
+		for tmpArg in sys.argv:
+			if tmpi==0: #skip first argument
+				tmpi+=1
+				continue
+			print "\nArgument: %s" % (tmpArg)
+			tmpi+=1
 else:
 	#debug
 	#print 'font grabber imported from another module'

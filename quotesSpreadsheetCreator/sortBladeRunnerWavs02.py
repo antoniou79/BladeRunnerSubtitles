@@ -37,9 +37,6 @@ supportedTLKInputFiles = [('1.TLK', 'TLK01'), ('2.TLK', 'TLK02'), ('3.TLK', 'TLK
 supportedMIXInputFiles = ['STARTUP.MIX']
 # 15 TRE files
 supportedExportedTREFiles = ['CLUES.TRE','ACTORS.TRE','CRIMES.TRE','CLUETYPE.TRE','KIA.TRE','SPINDEST.TRE','VK.TRE','OPTIONS.TRE','DLGMENU.TRE','ENDCRED.TRE','HELP.TRE','SCORERS.TRE','KIACRED.TRE','ERRORMSG.TRE','AUTOSAVE.TRE']
-## 4 font files
-#supportedExportedFONFiles = ['10PT.FON', 'TAHOMA18.FON', 'TAHOMA24.FON', 'KIA6PT.FON']
-
 
 wavfiles = []
 wavfilesNoDups = []
@@ -522,9 +519,11 @@ if __name__ == "__main__":
 			print "--------------------"
 			print "Thank you for using this app."
 			print "Please provide any feedback to: %s " % (company_email)
+			sys.exit()
 		elif(sys.argv[1] == '--version' or sys.argv[1] == '-v'):
 			print "%s %s supports Blade Runner (English version, CD edition)." % (app_name_spaced, app_version)
 			print "Please provide any feedback to: %s " % (company_email)
+			sys.exit()
 		else:
 			invalidSyntax = True
 	elif len(sys.argv) > 2:

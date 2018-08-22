@@ -197,10 +197,10 @@ if __name__ == '__main__':
     print "Running %s as main module" % (my_module_name)
     # assumes a file of name TAHOMA24.FON in same directory
     inFONFile = None
-    inFONFileName =  'TAHOMA24.FON'        # USED IN CREDIT END-TITLES and SCORERS BOARD AT POLICE STATION
+    #inFONFileName =  'TAHOMA24.FON'        # USED IN CREDIT END-TITLES and SCORERS BOARD AT POLICE STATION
     #inFONFileName =  'TAHOMA18.FON'        # USED IN CREDIT END-TITLES
     #inFONFileName =  '10PT.FON'            # BLADE RUNNER UNUSED FONT?
-    #inFONFileName =  'KIA6PT.FON'          # BLADE RUNNER MAIN FONT
+    inFONFileName =  'KIA6PT.FON'          # BLADE RUNNER MAIN FONT
     errorFound = False
     try:
         inFONFile = open(os.path.join('.',inFONFileName), 'rb')

@@ -34,7 +34,17 @@ class fonFile:
 
     def loadFonFile(self, fonBytesBuff, maxLength, fonFileName):
         self.simpleFontFileName =  fonFileName
+
+        realNumOfCharactersInImageSegment = 0
+        if self.simpleFontFileName == 'TAHOMA18.FON': # deal with corrupted original 'TAHOMA18.FON' file
+            realNumOfCharactersInImageSegment = 176
+            print "SPECIAL CASE. WORKAROUND FOR CORRUPTED %s FILE. Only %d characters supported!" % (self.simpleFontFileName, realNumOfCharactersInImageSegment)
+        else:
+            realNumOfCharactersInImageSegment = self.header().maxEntriesInTableOfDetails
+
         offsInFonFile = 0
+        localLstOfDataOffsets = []
+        del localLstOfDataOffsets[:]
 		#
 		# parse FON file fields for header
 		#
@@ -56,7 +66,8 @@ class fonFile:
             offsInFonFile += 4
 
             print "FON Header Info: "
-            print "Num of entries: %d\tGlyph max-Width: %d\tGlyph max-Height: %d\tGraphic Segment size %d" % (self.header().maxEntriesInTableOfDetails, self.header().maxGlyphWidth, self.header().maxGlyphHeight, self.header().graphicSegmentByteSize)
+            #print "Num of entries: %d\tGlyph max-Width: %d\tGlyph max-Height: %d\tGraphic Segment size %d" % (self.header().maxEntriesInTableOfDetails, self.header().maxGlyphWidth, self.header().maxGlyphHeight, self.header().graphicSegmentByteSize)
+            print "Num of entries: %d\tGlyph max-Width: %d\tGlyph max-Height: %d\tGraphic Segment size %d" % (realNumOfCharactersInImageSegment, self.header().maxGlyphWidth, self.header().maxGlyphHeight, self.header().graphicSegmentByteSize)
 			#
 			# Glyph details table (each entry is 5 unsigned integers == 5*4 = 20 bytes)
             # For most characters, their ASCII value + 1 is the index of their glyph's entry in the details table. The 0 entry of this table is reserved
@@ -64,7 +75,7 @@ class fonFile:
             #tmpXOffset, tmpYOffset, tmpWidth, tmpHeight, tmpDataOffset
             glyphEntryIndex = 0
             print "FON glyph details table: "
-            for idx in range(0, self.header().maxEntriesInTableOfDetails):
+            for idx in range(0, realNumOfCharactersInImageSegment):
                 tmpTuple = struct.unpack_from('I', fonBytesBuff, offsInFonFile)  # unsigned integer 4 bytes
                 tmpXOffset = tmpTuple[0]
                 offsInFonFile += 4
@@ -85,7 +96,16 @@ class fonFile:
                 tmpDataOffset = tmpTuple[0]
                 offsInFonFile += 4
 
-                print "Index: %d\txOffs: %d\tyOffs: %d\twidth: %d\theight: %d\tdataOffs: %d" % (glyphEntryIndex, tmpXOffset, tmpYOffset, tmpWidth, tmpHeight, tmpDataOffset)
+                if tmpWidth == 0 or tmpHeight == 0:
+               	    print "Index: %d\t UNUSED *****************************************************************" % (glyphEntryIndex)
+                else:
+                    print "Index: %d\txOffs: %d\tyOffs: %d\twidth: %d\theight: %d\tdataOffs: %d" % (glyphEntryIndex, tmpXOffset, tmpYOffset, tmpWidth, tmpHeight, tmpDataOffset)
+                    if tmpDataOffset not in localLstOfDataOffsets:
+                        localLstOfDataOffsets.append(tmpDataOffset)
+                    else:
+						# This never happens in the original files. Offsets are "re-used" but not really because it happens only for empty (height = 0) characters which all seem to point to the next non-empty character
+                        print "Index: %d\t RE-USING ANOTHER GLYPH *****************************************************************" % (glyphEntryIndex)
+
                 self.glyphDetailEntriesLst.append( ( tmpXOffset, tmpYOffset, tmpWidth, tmpHeight, tmpDataOffset) )
                 glyphEntryIndex += 1
 
@@ -125,16 +145,16 @@ class fonFile:
         paddingFromTopY = 2
         paddingBetweenGlyphsX = 2
 
-        if len(self.glyphDetailEntriesLst) == 0 or len(self.glyphDetailEntriesLst) != self.header().maxEntriesInTableOfDetails:
-            print "Error. Fon file load process did not complete correctly. Missing important data in structures. Cannot output image!"
-            return
-
         realNumOfCharactersInImageSegment = 0
         if self.simpleFontFileName == 'TAHOMA18.FON': # deal with corrupted original 'TAHOMA18.FON' file
             realNumOfCharactersInImageSegment = 176
             print "SPECIAL CASE. WORKAROUND FOR CORRUPTED %s FILE. Only %d characters supported!" % (self.simpleFontFileName, realNumOfCharactersInImageSegment)
         else:
             realNumOfCharactersInImageSegment = self.header().maxEntriesInTableOfDetails
+
+        if len(self.glyphDetailEntriesLst) == 0 or len(self.glyphDetailEntriesLst) != realNumOfCharactersInImageSegment:
+            print "Error. Fon file load process did not complete correctly. Missing important data in structures. Cannot output image!"
+            return
 
         # TODO asdf refine this code here. the dimensions calculation is very crude for now
         if self.header().maxGlyphWidth > 0 :
@@ -198,11 +218,12 @@ if __name__ == '__main__':
     # assumes a file of name TAHOMA24.FON in same directory
     inFONFile = None
     #inFONFileName =  'TAHOMA24.FON'        # USED IN CREDIT END-TITLES and SCORERS BOARD AT POLICE STATION
-    #inFONFileName =  'TAHOMA18.FON'        # USED IN CREDIT END-TITLES
+    inFONFileName =  'TAHOMA18.FON'        # USED IN CREDIT END-TITLES
     #inFONFileName =  '10PT.FON'            # BLADE RUNNER UNUSED FONT?
-    inFONFileName =  'KIA6PT.FON'          # BLADE RUNNER MAIN FONT
+    #inFONFileName =  'KIA6PT.FON'          # BLADE RUNNER MAIN FONT
     errorFound = False
     try:
+        print "Opening %s" % (inFONFileName)
         inFONFile = open(os.path.join('.',inFONFileName), 'rb')
     except:
         errorFound = True

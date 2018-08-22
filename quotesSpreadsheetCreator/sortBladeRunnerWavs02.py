@@ -367,7 +367,7 @@ def inputMIXExtractTREs(inputMIXpath, excelOutBook = None):
 								else:
 									print "Error while LOADING TRE file!"
 							else:
-								print "Error while reading TRE file %s into mem buffer" % (''.join('{:08X}'.format(idOfTREEntry)))
+								print "Error while reading TRE file %s into mem buffer" % (''.join('{:08X}'.format(idOfMIXEntry)))
 			inMIXFile.close()
 			print "Total TREs: %d " % (totalTREs)
 	return

@@ -921,7 +921,7 @@ class grabberFromPNG:
 									else:
 										print "Error while LOADING FON file!"
 								else:
-									print "Error while reading FON file %s into mem buffer" % (''.join('{:08X}'.format(idOfTREEntry)))
+									print "Error while reading FON file %s into mem buffer" % (''.join('{:08X}'.format(idOfMIXEntry)))
 
 				inMIXFile.close()
 				print "Total FONs: %d " % (totalFONs)

@@ -1,5 +1,7 @@
-windows-1253	!!"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\]^_`abcdefghijklmnopqrstuvwxyz{|}~ΆΈΉΊΌΎΏΐΑΒΓΔΕΖΗΘΙΚΛΜΝΞΟΠΡΣΤΥΦΧΨΩΪΫάέήίΰαβγδεζηθικλμνξοπρςστυφχψωϊϋόύώ
-!:1,;:1,`:1,{:1,|:1,}:1
-i:0,j:1,l:1
-KIA6PT#
+targetEncoding=windows-1253
+asciiCharList=!!"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\]^_`abcdefghijklmnopqrstuvwxyz{|}~ΆΈΉΊΌΎΏΐΑΒΓΔΕΖΗΘΙΚΛΜΝΞΟΠΡΣΤΥΦΧΨΩΪΫάέήίΰαβγδεζηθικλμνξοπρςστυφχψωϊϋόύώ
+explicitKerningList=!:1,;:1,`:1,{:1,|:1,}:1
+explicitWidthIncrement=i:0,j:1,l:1
+originalFontName=KIA6PT
+specialOutOfOrderGlyphsUTF8ToAsciiTargetEncoding=
 

@@ -35,9 +35,9 @@
 # BLADE RUNNER:
 # TODO: A way to export game fonts to png image (in order to be able to create new expanded fonts keeping glyph consistency!)
 #           Also override the corruption in TAHOMA18 while exporting
-# TODO: Test if we can have partial transparency
 # TODO: Re-Check the order of fonts in (in-game resource font files) TAHOMA18 (stored corrupted) and TAHOMA24 (in good condition).
 # TODO: print a warning for mismatch of number of letters in encoding override (or internal) and detected fonts in ROW IMAGE (especially if we expect a double exclamation mark at the start - and we ignoring one of the two)
+# TODO: Don't crash if mismatch in detected letter (fewer) in row image vs the letters in ascii list of overrideEncoding file
 # TODO: A more detailed readme for this tool and how to use it
 #
 # DONE: enforce overrideEncoding.txt -- this tool should no longer work without one
@@ -53,6 +53,7 @@
 # DONE: a value of '-' for this means ignore
 # DONE: ability to manually set extra width (additional columns at the end of glyph, with transparent color) for fonts by letter like a list in parameters or in overrideEncoding.txt }	 i:1,j:2,l:1 - POSITIVE VALUES ONLY
 # DONE: make space pixels (var spaceWidthInPixels) into an external param?
+# DONE: INFO NOTE IT IS NOT POSSIBLE TO have partial transparency
 
 import os, sys, shutil
 from os import walk, errno
@@ -102,9 +103,8 @@ class grabberFromPNG:
 	targetEncoding = 'windows-1253'
 	targetEncodingUnicode = unicode(targetEncoding, 'utf-8')
 
-	overrideEncodingTextFile = u'overrideEncoding.txt'
-	relPath = u'.'
-	overrideEncodingFileRelPath = os.path.join(relPath,overrideEncodingTextFile)
+	overrideEncodingPath = ""
+	originalFontName = ''
 
 	BR_GameID = 3
 	BR_Desc = 'Blade Runner'
@@ -160,10 +160,15 @@ class grabberFromPNG:
 		targetLangOrderAndListOfForeignLettersStrUnicode = None
 		targetLangOrderAndListOfForeignLettersStr = None
 		# Read from an override file if it exists. Filename should be overrideEncoding.txt (overrideEncodingTextFile)
-		if os.access(self.overrideEncodingFileRelPath, os.F_OK):
+		if(not self.overrideEncodingPath):
+			overrideEncodingTextFile = u'overrideEncoding.txt'
+			relPath = u'.'
+			self.overrideEncodingPath = os.path.join(relPath,overrideEncodingTextFile)
+
+		if os.access(self.overrideEncodingPath, os.F_OK):
 			## debug
-			#print "Override encoding file found: {0}.".format(self.overrideEncodingFileRelPath)
-			overEncodFile = open(self.overrideEncodingFileRelPath, 'r')
+			#print "Override encoding file found: {0}.".format(self.overrideEncodingPath)
+			overEncodFile = open(self.overrideEncodingPath, 'r')
 			linesLst = overEncodFile.readlines()
 			overEncodFile.close()
 			if linesLst is None or len(linesLst) == 0:
@@ -178,69 +183,72 @@ class grabberFromPNG:
 						involvedTokensLst.append(x)
 	#				 print involvedTokensLst
 					#break #only read first line
-				if len(involvedTokensLst) >= 2:
+				for tokenNameKeyPair in involvedTokensLst:
+					nameKeyTupl = tokenNameKeyPair.split('=', 1)
 					try:
-						self.targetEncodingUnicode = unicode(involvedTokensLst[0], 'utf-8')
-						self.targetEncoding = unicode.encode("%s" % self.targetEncodingUnicode, self.origEncoding)
-						targetLangOrderAndListOfForeignLettersStrUnicode = unicode(involvedTokensLst[1], 'utf-8')
-						#print targetLangOrderAndListOfForeignLettersStrUnicode
-						if(len(involvedTokensLst) >=3):
-							#print "involved tokens [2] (Explicit Kerning):", involvedTokensLst[2]
-							if(involvedTokensLst[2] != '-'):
-								# split at comma, then split at ':' and store tuples of character and explicit kerning
-								explicitKerningTokenUnicode = unicode(involvedTokensLst[2], 'utf-8')
-								explicitKerningTokenStr = unicode.encode("%s" % explicitKerningTokenUnicode, self.targetEncoding)
-								tokensOfExplicitKerningTokenStrList = explicitKerningTokenStr.split(',')
-								for tokenX in tokensOfExplicitKerningTokenStrList:
-									tokensOfTupleList = tokenX.split(':')
-									self.listOfExplicitKerning.append((ord(tokensOfTupleList[0]), int(tokensOfTupleList[1])) )
-
-						print "Explicit Kern List: " , self.listOfExplicitKerning
-						if(len(involvedTokensLst) >=4):
-							#print "involved tokens [3] (positive add to char width):", involvedTokensLst[3]
-							if(involvedTokensLst[3] != '-'):
-								# split at comma, then split at ':' and store tuples of character and explicit additional width - POSITIVE VALUES ONLY
-								explicitWidthIncrementTokenUnicode = unicode(involvedTokensLst[3], 'utf-8')
-								explicitWidthIncrementTokenStr =  unicode.encode("%s" % explicitWidthIncrementTokenUnicode, self.targetEncoding)
-								tokensOfWidthIncrementStrList = explicitWidthIncrementTokenStr.split(',')
-								for tokenX in tokensOfWidthIncrementStrList:
-									tokensOfTupleList = tokenX.split(':')
-									self.listOfWidthIncrements.append((ord(tokensOfTupleList[0]), int(tokensOfTupleList[1])))
-						print "Explicit Width Increment List: " , self.listOfWidthIncrements
-						if(len(involvedTokensLst) >=5 and self.specialGlyphMode == True):
-							#print "involved tokens [4] (out-of-order glyphs):", involvedTokensLst[4]
-	  						if(involvedTokensLst[4] != '-'):
-								# split at comma, then split at ':' and store tuples of character
-								explicitOutOfOrderGlyphsTokenUnicode = unicode(involvedTokensLst[4], 'utf-8') # unicode(involvedTokensLst[4], 'utf-8')
-								#explicitOutOfOrderGlyphsTokenStr =  unicode.encode("%s" % explicitOutOfOrderGlyphsTokenUnicode, self.targetEncoding)
-								#explicitOutOfOrderGlyphsTokenStr =  explicitOutOfOrderGlyphsTokenUnicode.decode(self.targetEncoding) # unicode.encode("%s" % explicitOutOfOrderGlyphsTokenUnicode, 'utf-8')
-								tokensOfOutOfOrderGlyphsStrList = explicitOutOfOrderGlyphsTokenUnicode.split(',')
-								for tokenX in tokensOfOutOfOrderGlyphsStrList:
-									tokensOfTupleList = tokenX.split(':')
-									self.listOfOutOfOrderGlyphs.append( (unichr(ord(tokensOfTupleList[0])), unichr(ord(tokensOfTupleList[1]))) )
-						overrideFailed = False
+						if len(nameKeyTupl) == 2 and nameKeyTupl[0] == 'targetEncoding' and nameKeyTupl[1] is not None and nameKeyTupl[1] != '-' and nameKeyTupl[1] != '':
+							self.targetEncodingUnicode = unicode(nameKeyTupl[1], 'utf-8')
+							self.targetEncoding = unicode.encode("%s" % self.targetEncodingUnicode, self.origEncoding)
+						elif len(nameKeyTupl) == 2 and nameKeyTupl[0] == 'asciiCharList' and nameKeyTupl[1] is not None:
+							targetLangOrderAndListOfForeignLettersStrUnicode = unicode(nameKeyTupl[1], 'utf-8')
+						elif len(nameKeyTupl) == 2 and nameKeyTupl[0] == 'explicitKerningList' and nameKeyTupl[1] is not None and nameKeyTupl[1] != '-' and nameKeyTupl[1] != '':
+							# split at comma, then split at ':' and store tuples of character and explicit kerning
+							explicitKerningTokenUnicode = unicode(nameKeyTupl[1], 'utf-8')
+							explicitKerningTokenStr = unicode.encode("%s" % explicitKerningTokenUnicode, self.targetEncoding)
+							tokensOfExplicitKerningTokenStrList = explicitKerningTokenStr.split(',')
+							for tokenX in tokensOfExplicitKerningTokenStrList:
+								tokensOfTupleList = tokenX.split(':')
+								self.listOfExplicitKerning.append((ord(tokensOfTupleList[0]), int(tokensOfTupleList[1])) )
+						elif len(nameKeyTupl) == 2 and nameKeyTupl[0] == 'explicitWidthIncrement' and nameKeyTupl[1] is not None and nameKeyTupl[1] != '-' and nameKeyTupl[1] != '':
+							# split at comma, then split at ':' and store tuples of character and explicit additional width - POSITIVE VALUES ONLY
+							explicitWidthIncrementTokenUnicode = unicode(nameKeyTupl[1], 'utf-8')
+							explicitWidthIncrementTokenStr =  unicode.encode("%s" % explicitWidthIncrementTokenUnicode, self.targetEncoding)
+							tokensOfWidthIncrementStrList = explicitWidthIncrementTokenStr.split(',')
+							for tokenX in tokensOfWidthIncrementStrList:
+								tokensOfTupleList = tokenX.split(':')
+								self.listOfWidthIncrements.append((ord(tokensOfTupleList[0]), int(tokensOfTupleList[1])))
+						elif len(nameKeyTupl) == 2 and nameKeyTupl[0] == 'specialOutOfOrderGlyphsUTF8ToAsciiTargetEncoding' and nameKeyTupl[1] is not None and nameKeyTupl[1] != '-' and nameKeyTupl[1] != '':
+							# split at comma, then split at ':' and store tuples of character
+							explicitOutOfOrderGlyphsTokenUnicode = unicode(nameKeyTupl[1], 'utf-8') # unicode(nameKeyTupl[1], 'utf-8')
+							#explicitOutOfOrderGlyphsTokenStr =  unicode.encode("%s" % explicitOutOfOrderGlyphsTokenUnicode, self.targetEncoding)
+							#explicitOutOfOrderGlyphsTokenStr =  explicitOutOfOrderGlyphsTokenUnicode.decode(self.targetEncoding) # unicode.encode("%s" % explicitOutOfOrderGlyphsTokenUnicode, 'utf-8')
+							tokensOfOutOfOrderGlyphsStrList = explicitOutOfOrderGlyphsTokenUnicode.split(',')
+							for tokenX in tokensOfOutOfOrderGlyphsStrList:
+								tokensOfTupleList = tokenX.split(':')
+								self.listOfOutOfOrderGlyphs.append( (unichr(ord(tokensOfTupleList[0])), unichr(ord(tokensOfTupleList[1]))) )
+						elif len(nameKeyTupl) == 2 and nameKeyTupl[0] == 'originalFontName' and nameKeyTupl[1] is not None and nameKeyTupl[1] != '-' and nameKeyTupl[1] != '':
+							self.originalFontName =  nameKeyTupl[1]
 					except:
 						overrideFailed = True
 						raise
-				else:
-					overrideFailed = True
+				if not (self.targetEncoding is None or self.targetEncoding  == '' or targetLangOrderAndListOfForeignLettersStrUnicode is None or len(targetLangOrderAndListOfForeignLettersStrUnicode) == 0 or self.originalFontName is None or self.originalFontName == ''):
+					overrideFailed = False
 
-	        # additional check
-			if self.targetEncoding is None or self.targetEncoding == '':
-				self.targetEncoding = self.defaultTargetEncoding
-			print "Target encoding: %s" % (self.targetEncoding)
-			#
+				print "Target Encoding: " , self.targetEncoding
+				#print "Lang Order: " , targetLangOrderAndListOfForeignLettersStrUnicode
+				print "Explicit Kern List: " , self.listOfExplicitKerning
+				print "Explicit Width Increment List: " , self.listOfWidthIncrements
+				print "Original Font Name: " , self.originalFontName
+
 			if(len(self.listOfOutOfOrderGlyphs) == 0 and self.specialGlyphMode == True):
-				self.listOfOutOfOrderGlyphs.append((u'\xed', u'\u0386')) # spanish i (si)
-				self.listOfOutOfOrderGlyphs.append((u'\xf1', u'\xa5')) # spanish n (senor)
-				self.listOfOutOfOrderGlyphs.append((u'\xe2', u'\xa6')) # a for (liver) pate
-				self.listOfOutOfOrderGlyphs.append((u'\xe9', u'\xa7')) # e for (liver) pate
+				# ASDF to verify the special fonts and probably just keep those that are needed
+				if self.originalFontName == 'TAHOMA18':
+					self.listOfOutOfOrderGlyphs.append((u'\xed', u'\u0386')) # spanish i (si)
+					self.listOfOutOfOrderGlyphs.append((u'\xf1', u'\xa5')) # spanish n (senor)
+					self.listOfOutOfOrderGlyphs.append((u'\xe2', u'\xa6')) # a for (liver) pate
+					self.listOfOutOfOrderGlyphs.append((u'\xe9', u'\xa7')) # e for (liver) pate
+				elif self.originalFontName == 'TAHOMA24':
+					self.listOfOutOfOrderGlyphs.append((u'\xed', u'\u0386')) # spanish i (si)
+					self.listOfOutOfOrderGlyphs.append((u'\xf1', u'\xa5')) # spanish n (senor)
+					self.listOfOutOfOrderGlyphs.append((u'\xe2', u'\xa6')) # a for (liver) pate
+					self.listOfOutOfOrderGlyphs.append((u'\xe9', u'\xa7')) # e for (liver) pate
 			print "Explicit Out Of Order Glyphs List: " , self.listOfOutOfOrderGlyphs
 		else:
 			## debug
-			print "Override encoding file not found: {0}.".format(self.overrideEncodingFileRelPath)
-			print "To override the default encoding {0} use an override encoding file with two tab separated entries: encoding (ascii) and characters-list. Convert to UTF-8 without BOM and save. For example:".format(defaultTargetEncoding)
-			print "windows-1252\t!!\"#$%&\'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\]^_`abcdefghijklmnopqrstuvwxyz{|}"
+			print "Error: Override encoding file not found: {0}.".format(self.overrideEncodingPath)
+			#print "Override encoding file not found: {0}.".format(self.overrideEncodingFileRelPath)
+			#print "To override the default encoding {0} use an override encoding file with two tab separated entries: encoding (ascii) and characters-list. Convert to UTF-8 without BOM and save. For example:".format(defaultTargetEncoding)
+			#print "windows-1252\t!!\"#$%&\'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\]^_`abcdefghijklmnopqrstuvwxyz{|}"
 			pass
 
 		if overrideFailed:
@@ -386,6 +394,11 @@ class grabberFromPNG:
 	def setAutoTabCalculation(self, pAutoTabCalculation):
 		self.autoTabCalculation = pAutoTabCalculation
 		return
+
+	def setOverrideEncodingPath(self, pOverrideEncodingPath):
+ 		self.overrideEncodingPath = pOverrideEncodingPath
+		return
+
 ##
 ## END OF SETTERS
 ##
@@ -484,6 +497,9 @@ class grabberFromPNG:
 						#print "xOffSet", startCol - (self.startOfAllLettersIncludingTheExtraDoubleAndWithKern + (self.lettersFound + 1) * self.tabSpaceWidth)
 				else:
 					self.listOfXOffsets.append(0)
+
+
+
 				self.listOfBaselines.append(endRow)
 				self.listOfWidths.append(endCol-startCol + 1) # includes the last col (TODO this was without the +1 for MI:SE translator -- possible bug? did we compensate?)
 				self.listOfHeights.append(endRow - startRow + 1) # +1 includes the last row
@@ -579,9 +595,9 @@ class grabberFromPNG:
 			#debug
 			print "Font Letters Detected (not including the first double): %d" % (self.lettersFound)
 			if (self.lettersFound ) > 0 :
-				print "widths: ", self.listOfWidths[0:]
-				print "Plain x offsets:"
-				print zip(self.targetLangOrderAndListOfForeignLettersAsciiValues[1:], self.listOfXOffsets)
+				#print "widths: ", self.listOfWidths[0:]
+				#print "Plain x offsets:"
+				#print zip(self.targetLangOrderAndListOfForeignLettersAsciiValues[1:], self.listOfXOffsets)
 #				 # normalize x offsets
 #				 minXoffset = min(self.listOfXOffsets)
 #				 if(minXoffset < 0):
@@ -595,8 +611,8 @@ class grabberFromPNG:
 				self.listOfYOffsets = [ x - minTopRow for x in listOfStartRows]
 				if (self.yOffsetForAllGlyphsExceptFirstSpecialGamma != 0):
 					self.listOfYOffsets =  [ x + self.yOffsetForAllGlyphsExceptFirstSpecialGamma for x in self.listOfYOffsets]
-				print "Y offsets: "
-				print self.listOfYOffsets
+				#print "Y offsets: "
+				#print self.listOfYOffsets
 				#
 				#
 				# # actually explicit Width setting could affect this so calc a new list here with final widths and get the max on that list!
@@ -619,6 +635,8 @@ class grabberFromPNG:
 				maxFontWidth =	max(listOfCalcWidths)
 				maxFontHeight =	 max(self.listOfHeights)
 				print "Max Width, Max Height (not necessarily for the same character font): %d, %d" % (maxFontWidth, maxFontHeight)
+				#print "Index\tAsciiOrd\tX Offs\tY Offs\tWidth\tHeight"
+				#print zip(range(1, len(self.listOfXOffsets)), self.targetLangOrderAndListOfForeignLettersAsciiValues[1:], self.listOfXOffsets, self.listOfYOffsets, listOfCalcWidths, self.listOfHeights)
 				targetFontFile = None
 				try:
 					targetFontFile = open(self.targetFONFilename, 'wb')
@@ -711,39 +729,32 @@ class grabberFromPNG:
 									# then this is an actual entry
 									#print i, ": actual entry index of ascii char", (i-1)," width:", self.listOfWidths[kIncIndx]
 									#print "Self explicit kerning list: " , self.listOfExplicitKerning
-									foundExplicitKern = False
-									foundExplicitWidthIncrement = False
 									if len(self.listOfExplicitKerning ) > 0:
 										keysOfExplicitKerning, valuesOfExplicitKerning = (zip(*self.listOfExplicitKerning))
 										if (i - 1) in keysOfExplicitKerning:
+											# found explicit kerning for this
 											print "Explicit kerning for %d " % (i-1)
-											foundExplicitKern = True
-											tmpXOffsetToWrite = pack('i', valuesOfExplicitKerning[keysOfExplicitKerning.index(i-1)]) # explicit X offset
+											self.listOfXOffsets[kIncIndx] = valuesOfExplicitKerning[keysOfExplicitKerning.index(i-1)] # explicit X offset
 
-									if foundExplicitKern == False:
-										tmpXOffsetToWrite = pack('i', self.listOfXOffsets[kIncIndx]) # x offset - from left			# TODO check if ok. Changed to signed int since it can be negative sometimes!
+									tmpXOffsetToWrite = pack('i', self.listOfXOffsets[kIncIndx]) # x offset - from left			# TODO check if ok. Changed to signed int since it can be negative sometimes!
 									targetFontFile.write(tmpXOffsetToWrite)
 									tmpYOffsetToWrite = pack('I', self.listOfYOffsets[kIncIndx])   # y offset from topmost row
 									targetFontFile.write(tmpYOffsetToWrite)
 
-									widthCalculatedValue = 0
 									if len(self.listOfWidthIncrements ) > 0:
 										keysOfWidthIncrements, valuesOfWidthIncrements = (zip(*self.listOfWidthIncrements))
 										if (i - 1) in keysOfWidthIncrements:
 											print "Explicit width increment for %d " % (i-1)
 											foundExplicitWidthIncrement = True
-											widthCalculatedValue = self.listOfWidths[kIncIndx] + valuesOfWidthIncrements[keysOfWidthIncrements.index(i-1)]
-											tmpWidthToWrite = pack('I', widthCalculatedValue ) # explicit width increment
+			 								self.listOfWidths[kIncIndx] = self.listOfWidths[kIncIndx] + valuesOfWidthIncrements[keysOfWidthIncrements.index(i-1)]
 
-									if foundExplicitWidthIncrement == False:
-										widthCalculatedValue = self.listOfWidths[kIncIndx]
-										tmpWidthToWrite = pack('I', widthCalculatedValue )
+									tmpWidthToWrite = pack('I', self.listOfWidths[kIncIndx] )
 									targetFontFile.write(tmpWidthToWrite)
 									tmpHeightToWrite = pack('I', self.listOfHeights[kIncIndx])
 									targetFontFile.write(tmpHeightToWrite)
 									tmpDataOffsetToWrite = pack('I', lastImageSegmentOffset) #
 									targetFontFile.write(tmpDataOffsetToWrite)
-									lastImageSegmentOffset = lastImageSegmentOffset + widthCalculatedValue * self.listOfHeights[kIncIndx]
+									lastImageSegmentOffset = lastImageSegmentOffset +  self.listOfWidths[kIncIndx]  * self.listOfHeights[kIncIndx]
 									kIncIndx = kIncIndx + 1 # increases only for valid characters
 								else:
 									#
@@ -760,6 +771,12 @@ class grabberFromPNG:
 									tmpDataOffsetToWrite = pack('I', dummyCharFontImageConstOffset) #
 									targetFontFile.write(tmpDataOffsetToWrite)
 						# end of for loop over all possible ascii values contained in the fon file
+						# print the corrected properties per glyph font:
+						print "***** FINAL (Explicit Kern, width accounted) *****\nIndex\tAsciiOrd\tX Offs\tY Offs\tWidth\tHeight"
+						tmpListOfTuplesToPrintDbg = zip(range(1, len(self.listOfXOffsets)), self.targetLangOrderAndListOfForeignLettersAsciiValues[1:], self.listOfXOffsets, self.listOfYOffsets, listOfCalcWidths, self.listOfHeights)
+						for itemDbg in tmpListOfTuplesToPrintDbg:
+							print "%4d\t%8d\t%6d\t%6d\t%6d\t%6d" % (itemDbg[0], itemDbg[1], itemDbg[2], itemDbg[3], itemDbg[4], itemDbg[5])
+
 						#
 						#
 						# Now fill in the image segment
@@ -796,13 +813,13 @@ class grabberFromPNG:
 						# If we have a character with explicit width increment (y) we should add columns of transparent colored pixels at the end (so since this is done by row, we should add y number of transparent pixels at the end of each row)
 						kIncIndx = 1 # start after the first glyph (which is DOUBLE)
 						for (c_startCol, c_startRow, c_endCol, c_endRow) in self.listOfLetterBoxes[0:]:
-							print (c_startCol, c_startRow, c_endCol, c_endRow),'for letter ', self.targetLangOrderAndListOfForeignLettersAsciiValues[kIncIndx]
+							#print (c_startCol, c_startRow, c_endCol, c_endRow),'for letter ', self.targetLangOrderAndListOfForeignLettersAsciiValues[kIncIndx]
 							explicitWidthIncrementVal = 0
 							if len(self.listOfWidthIncrements ) > 0:
 								tmpOrd = self.targetLangOrderAndListOfForeignLettersAsciiValues[kIncIndx]
 								keysOfWidthIncrements, valuesOfWidthIncrements = (zip(*self.listOfWidthIncrements))
 								if tmpOrd in keysOfWidthIncrements:
-									print "Explicit width increment for %d: %d" % (tmpOrd, valuesOfWidthIncrements[keysOfWidthIncrements.index(tmpOrd)])
+									#print "Explicit width increment for %d: %d" % (tmpOrd, valuesOfWidthIncrements[keysOfWidthIncrements.index(tmpOrd)])
 									explicitWidthIncrementVal = valuesOfWidthIncrements[keysOfWidthIncrements.index(tmpOrd)]
 
 
@@ -967,6 +984,7 @@ if __name__ == '__main__':
 	TMPSpecialGlyphMode = True
 	TMPAutoTabCalculation = True
 
+	TMPOverrideEncodingFilePath = ""
 	TMPinputPathForMixFiles = ""
 	TMPimageRowFilePNG = ""
 	TMPTargetFONfilename = ""
@@ -993,6 +1011,7 @@ if __name__ == '__main__':
 			print "Valid syntax B:"
 			print "%s -im [image_Row_PNG_Filename] -om [output_FON_filename] -pxLL [minSpaceBetweenLettersInRowLeftToLeft] -pxTT [minSpaceBetweenLettersInColumnTopToTop] -pxKn [kerningForFirstDummyFontLetter] -pxWS [whiteSpaceWidthInPixels]\n" % (app_name)    # deductKerningPixels"
 			print "The -ip switch has an argument that is the path for the input (MIX) files folder (can be the same as the Blade Runner installation folder)."
+			print "The -oe switch has an argument that is the input overrideEncoding file to use for the particular font creation."
 			print "The -im switch has an argument that is the input PNG image with a row of the font glyphs spaced apart."
 			print "The -om switch has an argument that is the output FON filename."
 			print "The -pxLL switch has an integer argument that specifies the minimum number of pixels between the left side of a glyph and the left side of the next glyph to its right in the line-row PNG."
@@ -1019,6 +1038,8 @@ if __name__ == '__main__':
 					TMPinputPathForMixFiles = sys.argv[i+1]
 					extractFonMode = True
 					print "Original FON file extraction mode enabled."
+				elif (sys.argv[i] == '-oe'):
+					TMPOverrideEncodingFilePath = sys.argv[i+1]
 				elif (sys.argv[i] == '-im'):
 					TMPimageRowFilePNG = sys.argv[i+1]
 				elif (sys.argv[i] == '-om'):
@@ -1043,7 +1064,7 @@ if __name__ == '__main__':
 		if (extractFonMode == False) and (not TMPTargetFONfilename or not TMPimageRowFilePNG or TMPminSpaceBetweenLettersInRowLeftToLeft <= 0 or TMPminSpaceBetweenLettersInColumnTopToTop <= 0 or TMPkerningForFirstDummyFontLetter <= 0 or TMPSpaceWidthInPixels <= 0)  : # this argument is mandatory
 			invalidSyntax = True
 
-		if (extractFonMode == True) and ( (TMPinputPathForMixFiles == '')  ):
+		if (extractFonMode == True) and ( (TMPinputPathForMixFiles == '')  or  not TMPOverrideEncodingFilePath ):
 			invalidSyntax = True
 	else:
 		invalidSyntax = True
@@ -1062,6 +1083,7 @@ if __name__ == '__main__':
 		myGrabInstance.setSpaceWidthInPixels(TMPSpaceWidthInPixels)
 		myGrabInstance.setSpecialGlyphMode(TMPSpecialGlyphMode)
 		myGrabInstance.setAutoTabCalculation(TMPAutoTabCalculation)
+		myGrabInstance.setOverrideEncodingPath(TMPOverrideEncodingFilePath)
 		myGrabInstance.initOverrideEncoding()
 #		myGrabInstance.setDeductKerningPixels(TMPdeductKerningPixels)
 		if extractFonMode:

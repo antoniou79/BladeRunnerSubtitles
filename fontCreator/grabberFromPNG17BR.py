@@ -764,7 +764,7 @@ class grabberFromPNG:
 									targetFontFile.write(tmpXOffsetToWrite)
 									tmpYOffsetToWrite = pack('I', 0x0000)	# 0 y offset
 									targetFontFile.write(tmpYOffsetToWrite)
-									tmpWidthToWrite = pack('I', self.spaceWidthInPixels) # font width set for some pixels of space # TODO ASDF maybe make this a parameter to be set at launch!
+									tmpWidthToWrite = pack('I', self.spaceWidthInPixels) # font width set for some pixels of space
 									targetFontFile.write(tmpWidthToWrite)
 									tmpHeightToWrite = pack('I', 0x0000)
 									targetFontFile.write(tmpHeightToWrite)

@@ -205,9 +205,11 @@ if __name__ == '__main__':
 	# assumes a file of name TAHOMA24.FON in same directory
 	inFONFile = None
 	#inFONFileName =  'TAHOMA24.FON'		# USED IN CREDIT END-TITLES and SCORERS BOARD AT POLICE STATION
-	inFONFileName =	 'TAHOMA18.FON'		   # USED IN CREDIT END-TITLES
+	#inFONFileName =	 'TAHOMA18.FON'		   # USED IN CREDIT END-TITLES
 	#inFONFileName =  '10PT.FON'			# BLADE RUNNER UNUSED FONT?
 	#inFONFileName =  'KIA6PT.FON'			# BLADE RUNNER MAIN FONT
+	inFONFileName =  'SUBTLS_E.FON'			# Subtitles font custom
+
 	errorFound = False
 	try:
 		print "Opening %s" % (inFONFileName)

@@ -45,7 +45,13 @@ supportedDialogueSheets = ['INGQUO_E.TRE', 'WSTLGO_E.VQA', 'BRLOGO_E.VQA', 'INTR
 # TAHOMA means both TAHOMA (their translation should be identical (although in the original they have minor differences but they don't affect anything)
 # We use a single naming for TAHOMA here because both TAHOMA18 and TAHOMA24 are used for ENDCRED.TRE
 # The TRE files that are identically named to the originals are supposed to override them (needs ScummVM compatible functionality for that)
-supportedTranslationSheets = [('OPTIONS.TRE', 'KIA6PT'), ('DLGMENU.TRE', 'KIA6PT'), ('SCORERS.TRE', 'TAHOMA'), ('VK.TRE', 'KIA6PT'), ('CLUES.TRE', 'KIA6PT'), ('CRIMES.TRE', 'KIA6PT'), ('ACTORS.TRE', 'KIA6PT'), ('HELP.TRE', 'KIA6PT'), ('AUTOSAVE.TRE', 'KIA6PT'), ('ERRORMSG.TRE', 'KIA6PT'), ('SPINDEST.TRE', 'KIA6PT'), ('KIA.TRE', 'KIA6PT'), ('KIACRED.TRE', 'KIA6PT'), ('ENDCRED.TRE', 'TAHOMA'), ('CLUETYPE.TRE', 'KIA6PT') , ('POGO.TRE', 'KIA6PT')]
+# TODO ASDF for now we except the TAHOMA type fonts and the corresponding TRE's until we have a proper mapping for those in the configuration file, and a proper extended (or new) font for them
+# TODO ASDF also removed KIACRED.TRE pending resolution for special font characters (2)
+#       FONTS REMOVED: ('ENDCRED.TRE', 'TAHOMA'),
+#       FONTS REMOVED: ('SCORERS.TRE', 'TAHOMA'),
+#       FONTS REMOVED: ('KIACRED.TRE', 'KIA6PT')
+
+supportedTranslationSheets = [('OPTIONS.TRE', 'KIA6PT'), ('DLGMENU.TRE', 'KIA6PT'), ('VK.TRE', 'KIA6PT'), ('CLUES.TRE', 'KIA6PT'), ('CRIMES.TRE', 'KIA6PT'), ('ACTORS.TRE', 'KIA6PT'), ('HELP.TRE', 'KIA6PT'), ('AUTOSAVE.TRE', 'KIA6PT'), ('ERRORMSG.TRE', 'KIA6PT'), ('SPINDEST.TRE', 'KIA6PT'), ('KIA.TRE', 'KIA6PT'), ('CLUETYPE.TRE', 'KIA6PT') , ('POGO.TRE', 'KIA6PT')]
 # The FON files that are identically named to the originals are supposed to override them (needs ScummVM compatible functionality for that)
 supportedOtherFilesForMix = [defaultSubtitlesFontName, 'KIA6PT.FON', 'TAHOMA18.FON', 'TAHOMA24.FON'] # , '10PT.FON'] # we don't deal with 10PT.FON since it's not used -- TODO verify this.
 
@@ -300,6 +306,14 @@ def outputMIX():
 				mixEntryfileSizeBytes = os.path.getsize('./' + sheetDialogueNameTRE)
 				mixFileEntries.append((entryID, sheetDialogueNameTRE, mixEntryfileSizeBytes))
 				totalFilesDataSize += mixEntryfileSizeBytes
+
+		for translatedTREFileName in [ x[0] for x in supportedTranslationSheets] :
+			if os.path.isfile('./' + translatedTREFileName):
+				entryID = calculateFoldHash(translatedTREFileName)
+				mixEntryfileSizeBytes = os.path.getsize('./' + translatedTREFileName)
+				mixFileEntries.append((entryID, translatedTREFileName, mixEntryfileSizeBytes))
+				totalFilesDataSize += mixEntryfileSizeBytes
+
 		for otherFileName in supportedOtherFilesForMix:
 			if os.path.isfile('./' + otherFileName):
 				entryID = calculateFoldHash(otherFileName)
@@ -461,7 +475,9 @@ def inputXLS(filename):
 	# xl_sheet = xl_workbook.sheet_by_index(0)
 	#
 	#
-	for sheetDialogueName in supportedDialogueSheets:
+	mergedListOfSubtitleSheetsAndTranslatedTREs = supportedDialogueSheets + [ x[0] for x in supportedTranslationSheets ]
+
+	for sheetDialogueName in mergedListOfSubtitleSheetsAndTranslatedTREs:
 		xl_sheet = xl_workbook.sheet_by_name(sheetDialogueName)
 		if(xl_sheet is not None):
 			print ('Sheet name: %s' % xl_sheet.name)
@@ -488,9 +504,12 @@ def inputXLS(filename):
 			if xl_sheet.name == supportedDialogueSheets[0]:
 				print 'IN GAME QUOTES'
 				mode = 1 #in-game quote
-			else:
+			elif xl_sheet.name in supportedDialogueSheets:
 				print 'VQA SCENE DIALOGUE'
 				mode = 2 #VQA
+			elif xl_sheet.name in [ x[0] for x in supportedTranslationSheets ]:
+				print 'TRANSLATED TRE'
+				mode = 3 # Translated TRE
 			#
 			del tableOfStringIds[:]
 			del tableOfStringEntries[:]
@@ -561,6 +580,35 @@ def inputXLS(filename):
 							if ( predefinedLengthThreshold < len(newQuoteReplaceSpecialsAscii)):
 								extremeQuotesList.append((tmpQuoteID, newQuoteReplaceSpecialsAscii))
 								quoteNumAboveThreshold += 1
+					#
+					# For translated TRE sheets the id is already in first column, the text is in the next one
+					#
+					elif mode == 3:
+					   #print ('Column: [%s] cell_obj: [%s]' % (col_idx, cell_obj))
+						if(col_idx == 0):
+							tmpQuoteID = int(cell_obj.value)
+							tableOfStringIds.append(tmpQuoteID)
+						elif(col_idx == 1) :
+							#if switchFlagShowQuote == True:
+							#	 print ('length: %d: %s' % (len(cell_obj.value), cell_obj.value))
+							#	 print ('object: %s' % (cell_obj))
+							#	 #newQuoteReplaceSpecials =	 cell_obj.value.decode("utf-8") # unicode(cell_obj.value, 'windows-1252')
+							#	 #print ('decoded to unicode: %s ' % (newQuoteReplaceSpecials)) # error with char xf1
+							newQuoteReplaceSpecialsAscii = translateQuoteToAsciiProper(cell_obj, xl_sheet.name)
+							#if switchFlagShowQuote == True:
+							#	 print ('length: %d: %s' % (len(newQuoteReplaceSpecialsAscii), newQuoteReplaceSpecialsAscii))
+							#print ':'.join(x.encode('hex') for x in newQuoteReplaceSpecialsAscii)	 # seems to work.  new chars are non-printable but exist in string
+
+							tableOfStringEntries.append(newQuoteReplaceSpecialsAscii)
+							tableOfStringOffsets.append(curStrStartOffset)
+							curStrStartOffset += (len(newQuoteReplaceSpecialsAscii) + 1)
+							if ( longestLength < len(newQuoteReplaceSpecialsAscii)):
+								longestLength = len(newQuoteReplaceSpecialsAscii)
+							if ( predefinedLengthThreshold < len(newQuoteReplaceSpecialsAscii)):
+								extremeQuotesList.append((tmpQuoteID, newQuoteReplaceSpecialsAscii))
+								quoteNumAboveThreshold += 1
+								#print ('row_idx %d. tag %s = quoteId [%d], length: %d: %s' % (row_idx, twoTokensfirstColSplitAtDotXLS[0], tmpQuoteID, len(newQuoteReplaceSpecialsAscii), newQuoteReplaceSpecialsAscii))
+
 			tableOfStringOffsets.append(curStrStartOffset) # the final extra offset entry
 			print 'Longest Length = %d, quotes above threshold (%d): %d' % (longestLength, predefinedLengthThreshold, quoteNumAboveThreshold)
 			for extremQuotTuple in extremeQuotesList:

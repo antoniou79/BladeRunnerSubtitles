@@ -1,0 +1,5 @@
+targetEncoding=windows-1253
+fontNameAndOutOfOrderGlyphs=SUBTLS_E#í:Ά,ñ:¥,â:¦,é:§,Ά:£
+fontNameAndOutOfOrderGlyphs=KIA6PT#
+fontNameAndOutOfOrderGlyphs=TAHOMA18#í:Ά,ñ:¥,â:¦,é:§,Ά:£
+fontNameAndOutOfOrderGlyphs=TAHOMA24#í:Ά,ñ:¥,â:¦,é:§,Ά:£

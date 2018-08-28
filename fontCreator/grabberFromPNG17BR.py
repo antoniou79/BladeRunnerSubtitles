@@ -189,7 +189,7 @@ class grabberFromPNG:
 						if len(nameKeyTupl) == 2 and nameKeyTupl[0] == 'targetEncoding' and nameKeyTupl[1] is not None and nameKeyTupl[1] != '-' and nameKeyTupl[1] != '':
 							self.targetEncodingUnicode = unicode(nameKeyTupl[1], 'utf-8')
 							self.targetEncoding = unicode.encode("%s" % self.targetEncodingUnicode, self.origEncoding)
-						elif len(nameKeyTupl) == 2 and nameKeyTupl[0] == 'asciiCharList' and nameKeyTupl[1] is not None:
+						elif len(nameKeyTupl) == 2 and nameKeyTupl[0] == 'asciiCharList' and nameKeyTupl[1] is not None and nameKeyTupl[1] != '':
 							targetLangOrderAndListOfForeignLettersStrUnicode = unicode(nameKeyTupl[1], 'utf-8')
 						elif len(nameKeyTupl) == 2 and nameKeyTupl[0] == 'explicitKerningList' and nameKeyTupl[1] is not None and nameKeyTupl[1] != '-' and nameKeyTupl[1] != '':
 							# split at comma, then split at ':' and store tuples of character and explicit kerning

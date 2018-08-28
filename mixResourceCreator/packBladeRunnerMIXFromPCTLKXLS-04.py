@@ -23,20 +23,32 @@ app_name = "packBladeRunnerMIXFromPCTLKXLS"
 app_name_spaced = "Get a TRE file from spoken in-game quotes"
 numOfSpokenQuotes = 0
 
+defaultSubtitlesFontName = 'SUBTLS_E.FON'
+
 origEncoding = 'windows-1252'
 defaultTargetEncoding = 'windows-1252'
 defaultTargetEncodingUnicode = unicode(defaultTargetEncoding, 'utf-8')
 targetEncoding = ''
 targetEncodingUnicode = ''
 
-overrideEncodingTextFile = u'overrideEncoding.txt'
+configureFontsTranslationTextFile = u'configureFontsTranslation.txt'
 relPath = u'.'
-overrideEncodingFileRelPath = os.path.join(relPath,overrideEncodingTextFile)
+configureFontsTranslationTextFileRelPath = os.path.join(relPath, configureFontsTranslationTextFile)
 
 
 # DONE ADD ALL SHEETS NEEDED FROM THE XLS
+# all dialogue sheets get the SUBTLS_E.FON for translation to TRE
+# - TODO maybe merge this with TAHOMA18.FON eventually
 supportedDialogueSheets = ['INGQUO_E.TRE', 'WSTLGO_E.VQA', 'BRLOGO_E.VQA', 'INTRO_E.VQA', 'MW_A_E.VQA', 'MW_B01_E.VQA', 'MW_B02_E.VQA', 'MW_B03_E.VQA', 'MW_B04_E.VQA', 'MW_B05_E.VQA', 'INTRGT_E.VQA', 'MW_D_E.VQA', 'MW_C01_E.VQA', 'MW_C02_E.VQA', 'MW_C03_E.VQA', 'END04A_E.VQA', 'END04B_E.VQA', 'END04C_E.VQA', 'END06_E.VQA', 'END01A_E.VQA', 'END01B_E.VQA', 'END01C_E.VQA', 'END01D_E.VQA', 'END01E_E.VQA', 'END01F_E.VQA', 'END03_E.VQA']
-supportedOtherFilesForMix = ['SUBTLS_E.FON']
+#
+# Each TRE sheet gets a specific font to handle their translation to TRE
+# TAHOMA means both TAHOMA (their translation should be identical (although in the original they have minor differences but they don't affect anything)
+# We use a single naming for TAHOMA here because both TAHOMA18 and TAHOMA24 are used for ENDCRED.TRE
+# The TRE files that are identically named to the originals are supposed to override them (needs ScummVM compatible functionality for that)
+supportedTranslationSheets = [('OPTIONS.TRE', 'KIA6PT'), ('DLGMENU.TRE', 'KIA6PT'), ('SCORERS.TRE', 'TAHOMA'), ('VK.TRE', 'KIA6PT'), ('CLUES.TRE', 'KIA6PT'), ('CRIMES.TRE', 'KIA6PT'), ('ACTORS.TRE', 'KIA6PT'), ('HELP.TRE', 'KIA6PT'), ('AUTOSAVE.TRE', 'KIA6PT'), ('ERRORMSG.TRE', 'KIA6PT'), ('SPINDEST.TRE', 'KIA6PT'), ('KIA.TRE', 'KIA6PT'), ('KIACRED.TRE', 'KIA6PT'), ('ENDCRED.TRE', 'TAHOMA'), ('CLUETYPE.TRE', 'KIA6PT') , ('POGO.TRE', 'KIA6PT')]
+# The FON files that are identically named to the originals are supposed to override them (needs ScummVM compatible functionality for that)
+supportedOtherFilesForMix = [defaultSubtitlesFontName, 'KIA6PT.FON', 'TAHOMA18.FON', 'TAHOMA24.FON'] # , '10PT.FON'] # we don't deal with 10PT.FON since it's not used -- TODO verify this.
+
 
 tableOfStringIds = []
 tableOfStringOffsets = []
@@ -44,7 +56,8 @@ tableOfStringEntries = []
 
 # this list is used in order to replace the actual indices of characters with delegate font indices (ASCII indexes of the target code-page) which have been used during the font creation (or exist in in the internal TAHOMA font)
 # contains tuples of two values. First value is actual Utf char, the second is a replacement ASCII char
-listOfOutOfOrderGlyphs = []
+listOfFontNamesToOutOfOrderGlyphs = []
+arrangedListOfFontNamesToOutOfOrderGlyphs = []
 
 actorPropertyEntries = []
 actorPropertyEntriesWasInit = False
@@ -52,79 +65,101 @@ actorPropertyEntriesWasInit = False
 def initOverrideEncoding():
 	global targetEncoding
 
-	overrideFailed = True
+	configureTranslationFailed = True
 	try:
-		if os.access(overrideEncodingFileRelPath, os.F_OK):
-			overEncodFile = open(overrideEncodingFileRelPath, 'r')
-			linesLst = overEncodFile.readlines()
-			overEncodFile.close()
+		if os.access(configureFontsTranslationTextFileRelPath, os.F_OK):
+			conFontsTranslationFile = open(configureFontsTranslationTextFileRelPath, 'r')
+			linesLst = conFontsTranslationFile.readlines()
+			conFontsTranslationFile.close()
 			if linesLst is None or len(linesLst) == 0:
-				overrideFailed = True
+				configureTranslationFailed = True
 			else:
-				print "Override Encoding Info: "
+				print "Font Translation Configuration Info: "
 				involvedTokensLst =[]
 				for readEncodLine in linesLst:
 					tmplineTokens = re.findall("[^\t\n]+",readEncodLine )
 					for x in tmplineTokens:
 						involvedTokensLst.append(x)
-				if len(involvedTokensLst) >= 2:
-					targetEncodingUnicode = unicode(involvedTokensLst[0], 'utf-8')
-					targetEncoding = unicode.encode("%s" % targetEncodingUnicode, origEncoding)
-					if(len(involvedTokensLst) >=5):
-						#print "(out-of-order glyphs):", involvedTokensLst[4]
-						if(involvedTokensLst[4] != '-'):
-							# split at comma, then split at ':' and store tuples of character
-							explicitOutOfOrderGlyphsTokenUnicode = unicode(involvedTokensLst[4], 'utf-8') # unicode(involvedTokensLst[4], 'utf-8')
-							#explicitOutOfOrderGlyphsTokenStr =  unicode.encode("%s" % explicitOutOfOrderGlyphsTokenUnicode, targetEncoding)
-							#explicitOutOfOrderGlyphsTokenStr =  explicitOutOfOrderGlyphsTokenUnicode.decode(targetEncoding) # unicode.encode("%s" % explicitOutOfOrderGlyphsTokenUnicode, 'utf-8')
-							tokensOfOutOfOrderGlyphsStrList = explicitOutOfOrderGlyphsTokenUnicode.split(',')
-							for tokenX in tokensOfOutOfOrderGlyphsStrList:
-								tokensOfTupleList = tokenX.split(':')
-								listOfOutOfOrderGlyphs.append( (unichr(ord(tokensOfTupleList[0])), unichr(ord(tokensOfTupleList[1]))) )
-					overrideFailed = False
-				else:
-					overrideFailed = True
+
+				for tokenNameKeyPair in involvedTokensLst:
+					nameKeyTupl = tokenNameKeyPair.split('=', 1)
+					try:
+						if len(nameKeyTupl) == 2 and nameKeyTupl[0] == 'targetEncoding' and nameKeyTupl[1] is not None and nameKeyTupl[1] != '-' and nameKeyTupl[1] != '':
+							targetEncodingUnicode = unicode(nameKeyTupl[1], 'utf-8')
+							targetEncoding = unicode.encode("%s" % targetEncodingUnicode, origEncoding)
+						elif len(nameKeyTupl) == 2 and nameKeyTupl[0] == 'fontNameAndOutOfOrderGlyphs' and nameKeyTupl[1] is not None and nameKeyTupl[1] != '':
+							# split at hash tag first
+							tmpListOfOutOfOrderGlyphs = []
+							del(tmpListOfOutOfOrderGlyphs[:])
+							fontNameAndOOOGlyphsTuple = nameKeyTupl[1].split('#', 1)
+							if (len (fontNameAndOOOGlyphsTuple) == 2 and fontNameAndOOOGlyphsTuple[0] != '' and fontNameAndOOOGlyphsTuple[1] is not None and fontNameAndOOOGlyphsTuple[1] != ''):
+								tmpFontName = fontNameAndOOOGlyphsTuple[0]
+								# split at comma, then split at ':' and store tuples of character
+								explicitOutOfOrderGlyphsTokenUnicode = unicode(fontNameAndOOOGlyphsTuple[1], 'utf-8') # unicode(fontNameAndOOOGlyphsTuple[1], 'utf-8')
+								#explicitOutOfOrderGlyphsTokenStr =  unicode.encode("%s" % explicitOutOfOrderGlyphsTokenUnicode, targetEncoding)
+								#explicitOutOfOrderGlyphsTokenStr =  explicitOutOfOrderGlyphsTokenUnicode.decode(targetEncoding) # unicode.encode("%s" % explicitOutOfOrderGlyphsTokenUnicode, 'utf-8')
+								tokensOfOutOfOrderGlyphsStrList = explicitOutOfOrderGlyphsTokenUnicode.split(',')
+								for tokenX in tokensOfOutOfOrderGlyphsStrList:
+									tokensOfTupleList = tokenX.split(':')
+									tmpListOfOutOfOrderGlyphs.append( (unichr(ord(tokensOfTupleList[0])), unichr(ord(tokensOfTupleList[1])))  )
+
+								if tmpFontName not in [x[0] for x in listOfFontNamesToOutOfOrderGlyphs]:
+									listOfFontNamesToOutOfOrderGlyphs.append(  ( tmpFontName,  tmpListOfOutOfOrderGlyphs) )
+
+							else:
+								configureTranslationFailed = True
+								break
+					except:
+						configureTranslationFailed = True
+						raise
+
+				if not (targetEncoding is None or targetEncoding == ''):
+					configureTranslationFailed = False
+
 	except:
-		print "Error while trying to access file for encoding info: %s" % (overrideEncodingFileRelPath)
+		print "Error while trying to access file for encoding info: %s" % (configureFontsTranslationTextFileRelPath)
 		raise
-		overrideFailed = True
-	if 	overrideFailed == True:
-		targetEncoding = defaultTargetEncoding
-		print "Could not find proper override encoding info in: %s" % (overrideEncodingFileRelPath)
-		print "Proceeding with encoding defaults..."
+		configureTranslationFailed = True
+
+	if 	configureTranslationFailed == True:
+#		targetEncoding = defaultTargetEncoding
+		print "Error! Could not find proper override encoding info in: %s" % (configureFontsTranslationTextFileRelPath)
+		sys.exit()	# terminate if override Failed (Blade Runner)
 	#
+	# TODO ASDF fix this!!!
 	#
-	# additional check
-	if targetEncoding is None or targetEncoding == '':
-		targetEncoding = defaultTargetEncoding
-	print "Target encoding: %s" % (targetEncoding)
-	#
-	if(len(listOfOutOfOrderGlyphs) == 0):
-		listOfOutOfOrderGlyphs.append((u'\xed', u'\u0386')) # spanish i (si)
-		listOfOutOfOrderGlyphs.append((u'\xf1', u'\xa5')) # spanish n (senor)
-		listOfOutOfOrderGlyphs.append((u'\xe2', u'\xa6')) # a for (liver) pate
-		listOfOutOfOrderGlyphs.append((u'\xe9', u'\xa7')) # e for (liver) pate
-	print "Explicit Out Of Order Glyphs List: " , listOfOutOfOrderGlyphs
+	if(len(listOfFontNamesToOutOfOrderGlyphs) == 0):
+		tmpFontType = defaultSubtitlesFontName[:-4] # remove the .FON extensionFromTheName
+		print "Empty list for out of order glyphs. Assuming default out of order glyphs and only for the %s font" % (tmpFontType)
+		tmplistOfOutOfOrderGlyphs = []
+		tmplistOfOutOfOrderGlyphs.append((u'\xed', u'\u0386')) # spanish i (si)
+		tmplistOfOutOfOrderGlyphs.append((u'\xf1', u'\xa5')) # spanish n (senor)
+		tmplistOfOutOfOrderGlyphs.append((u'\xe2', u'\xa6')) # a for (liver) pate
+		tmplistOfOutOfOrderGlyphs.append((u'\xe9', u'\xa7')) # e for (liver) pate
+		listOfFontNamesToOutOfOrderGlyphs.append( (tmpFontType, tmplistOfOutOfOrderGlyphs))
+	print "Explicit Out Of Order Glyphs List: " , listOfFontNamesToOutOfOrderGlyphs
 	# arrange list properly:
 	# check if the list contains same item as key and value (in different pairs)
 	# if such case then the pair with the key should preceed the pair with the value matched,
 	# to avoid replacing instances of a special character (key) with a delegate (value) that will be later replaced again due to the second pair
 	#
-	while (True):
-		foundMatchingPairs = False
-		for glyphDelegItA in listOfOutOfOrderGlyphs:
-			for glyphDelegItB in listOfOutOfOrderGlyphs:
-				if (glyphDelegItA[1] == glyphDelegItB[0] and  listOfOutOfOrderGlyphs.index(glyphDelegItA) < listOfOutOfOrderGlyphs.index(glyphDelegItB)):
-					# swap
-					itamA, itamB = listOfOutOfOrderGlyphs.index(glyphDelegItA), listOfOutOfOrderGlyphs.index(glyphDelegItB)
-					listOfOutOfOrderGlyphs[itamB], listOfOutOfOrderGlyphs[itamA] = listOfOutOfOrderGlyphs[itamA], listOfOutOfOrderGlyphs[itamB]
-					foundMatchingPairs = True
+	for (itFontName, itOOOGlyphList) in listOfFontNamesToOutOfOrderGlyphs:
+		while (True):
+			foundMatchingPairs = False
+			for glyphDelegItA in itOOOGlyphList:
+				for glyphDelegItB in itOOOGlyphList:
+					if (glyphDelegItA[1] == glyphDelegItB[0] and  itOOOGlyphList.index(glyphDelegItA) < itOOOGlyphList.index(glyphDelegItB)):
+						# swap
+						itamA, itamB = itOOOGlyphList.index(glyphDelegItA), itOOOGlyphList.index(glyphDelegItB)
+						itOOOGlyphList[itamB], itOOOGlyphList[itamA] = itOOOGlyphList[itamA], itOOOGlyphList[itamB]
+						foundMatchingPairs = True
+						break
+				if (foundMatchingPairs == True):
 					break
-			if (foundMatchingPairs == True):
-				break
-		if(foundMatchingPairs == False):
-			break # the whole while loop
-	print "Arranged Glyphs Delegates List: " , listOfOutOfOrderGlyphs
+			if(foundMatchingPairs == False):
+				break # the whole while loop
+        arrangedListOfFontNamesToOutOfOrderGlyphs.append( ( itFontName, itOOOGlyphList))
+	print "Arranged Glyphs Delegates List: " , arrangedListOfFontNamesToOutOfOrderGlyphs
 	return
 
 #
@@ -332,13 +367,34 @@ def outputMIX():
 	# TODO actors TRE has 0x49 entries, (73 names), but table of ids has 73 entries BUT the offset table (first offset is calced + 0x04, so from end of the first 4 count bytes) has 74 entries. The last entry indexes the end of file (!)
 	# TODO all strings are NULL terminated in the TRE file!
 
-def translateQuoteToAsciiProper(cellObj):
+def translateQuoteToAsciiProper(cellObj, pSheetName):
 	newQuoteReplaceSpecials =  cellObj.value.encode("utf-8")
 	#print ('Encoded to unicode: %s ' % (newQuoteReplaceSpecials))
 	newQuoteReplaceSpecials = newQuoteReplaceSpecials.decode("utf-8")
 
+	pertinentListOfOutOfOrderGlyphs = []
+	#print pSheetName
+	#print supportedDialogueSheets
+	#print defaultSubtitlesFontName[:-4]
+	#print [x[0] for x in listOfFontNamesToOutOfOrderGlyphs]
+	if pSheetName in supportedDialogueSheets and defaultSubtitlesFontName[:-4] in [x[0] for x in listOfFontNamesToOutOfOrderGlyphs]:
+		for (tmpFontName, tmpOOOList) in listOfFontNamesToOutOfOrderGlyphs:
+			if tmpFontName == defaultSubtitlesFontName[:-4]:
+				pertinentListOfOutOfOrderGlyphs = tmpOOOList
+				break
+	elif pSheetName in [x[0] for x in supportedTranslationSheets]:
+		pertinentFontType = ''
+		for (tmpSheetName, tmpFontType) in supportedTranslationSheets:
+			if tmpSheetName == pSheetName:
+				pertinentFontType = tmpFontType
+				break
+		for (tmpFontName, tmpOOOList) in listOfFontNamesToOutOfOrderGlyphs:
+			if tmpFontName ==  pertinentFontType:
+				pertinentListOfOutOfOrderGlyphs = tmpOOOList
+				break
+
 	#newQuoteReplaceSpecials = newQuoteReplaceSpecials.replace(u"\u0386", u"\u00A3")
-	for repTuple in listOfOutOfOrderGlyphs:
+	for repTuple in pertinentListOfOutOfOrderGlyphs:
 		newQuoteReplaceSpecials = newQuoteReplaceSpecials.replace(repTuple[0], repTuple[1])
 	# WORKAROUND, we re-replace the spanish i delegate again here!
 #	newQuoteReplaceSpecials = newQuoteReplaceSpecials.replace(u'\xa2', u'\u0386')   # this is needed for spanish i because in utf-8 it's actually the u'\u0386' that's assigned to A tonomeno which is the delegate.
@@ -466,7 +522,7 @@ def inputXLS(filename):
 							#	 print ('object: %s' % (cell_obj))
 							#	 #newQuoteReplaceSpecials =	 cell_obj.value.decode("utf-8") # unicode(cell_obj.value, 'windows-1252')
 							#	 #print ('decoded to unicode: %s ' % (newQuoteReplaceSpecials)) # error with char xf1
-							newQuoteReplaceSpecialsAscii = translateQuoteToAsciiProper(cell_obj)
+							newQuoteReplaceSpecialsAscii = translateQuoteToAsciiProper(cell_obj, xl_sheet.name)
 							#if switchFlagShowQuote == True:
 							#	 print ('length: %d: %s' % (len(newQuoteReplaceSpecialsAscii), newQuoteReplaceSpecialsAscii))
 							#print ':'.join(x.encode('hex') for x in newQuoteReplaceSpecialsAscii)	 # seems to work.  new chars are non-printable but exist in string
@@ -485,7 +541,7 @@ def inputXLS(filename):
 					#
 					elif mode == 2:
 						if(col_idx == 2): # subtitle text
-							newQuoteReplaceSpecialsAscii = translateQuoteToAsciiProper(cell_obj)
+							newQuoteReplaceSpecialsAscii = translateQuoteToAsciiProper(cell_obj, xl_sheet.name)
 							#print ('length: %d: %s' % (len(newQuoteReplaceSpecialsAscii), newQuoteReplaceSpecialsAscii))
 							#print ':'.join(x.encode('hex') for x in newQuoteReplaceSpecialsAscii)	# seems to work.  new chars are non-printable but exist in string
 							# don't append to tableOfStringEntries yet

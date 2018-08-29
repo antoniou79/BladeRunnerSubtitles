@@ -1,0 +1,1 @@
+python2.7 grabberFromPNG17BR.py -im Tahoma_24ShdwSimpleN2.png -oe ./samples/overrideEncodingTahoma24.txt -om TAHOMA24.FON -pxLL 45 -pxTT 40 -pxKn 1 -pxWS 8 -pxYo 2

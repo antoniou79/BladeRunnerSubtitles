@@ -232,17 +232,15 @@ class grabberFromPNG:
 				print "Original Font Name: " , self.originalFontName
 
 			if(len(self.listOfOutOfOrderGlyphs) == 0 and self.specialGlyphMode == True):
-				# ASDF to verify the special fonts and probably just keep those that are needed
-				if self.originalFontName == 'TAHOMA18':
+				# Just keep those that are needed
+				if self.originalFontName == 'SUBTLS_E':
 					self.listOfOutOfOrderGlyphs.append((u'\xed', u'\u0386')) # spanish i (si)
 					self.listOfOutOfOrderGlyphs.append((u'\xf1', u'\xa5')) # spanish n (senor)
 					self.listOfOutOfOrderGlyphs.append((u'\xe2', u'\xa6')) # a for (liver) pate
 					self.listOfOutOfOrderGlyphs.append((u'\xe9', u'\xa7')) # e for (liver) pate
-				elif self.originalFontName == 'TAHOMA24':
-					self.listOfOutOfOrderGlyphs.append((u'\xed', u'\u0386')) # spanish i (si)
-					self.listOfOutOfOrderGlyphs.append((u'\xf1', u'\xa5')) # spanish n (senor)
-					self.listOfOutOfOrderGlyphs.append((u'\xe2', u'\xa6')) # a for (liver) pate
-					self.listOfOutOfOrderGlyphs.append((u'\xe9', u'\xa7')) # e for (liver) pate
+				elif self.originalFontName == 'TAHOMA': # treat TAHOMA18 and TAHOMA24 similarily here
+					self.listOfOutOfOrderGlyphs.append((u'\xe9', u'\u0192')) 	# french e punctuated
+					self.listOfOutOfOrderGlyphs.append((u'\xfc', u'\u2013')) 	# u umlaut
 			print "Explicit Out Of Order Glyphs List: " , self.listOfOutOfOrderGlyphs
 		else:
 			## debug
@@ -742,7 +740,7 @@ class grabberFromPNG:
 									kIncIndx = kIncIndxLst[0][0]
 									#kIncIndx = self.targetLangOrderAndListOfForeignLettersAsciiValues.index(i-1)
 									#print kIncIndxLst
-									print kIncIndx, i-1
+									#print kIncIndx, i-1
 									#print i, ": actual entry index of ascii char", (i-1)," width:", self.listOfWidths[kIncIndx]
 									#print "Self explicit kerning list: " , self.listOfExplicitKerning
 									if len(self.listOfExplicitKerning ) > 0:

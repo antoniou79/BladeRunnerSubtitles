@@ -82,7 +82,7 @@ class fonFile:
 			#tmpXOffset, tmpYOffset, tmpWidth, tmpHeight, tmpDataOffset
 			print "FON glyph details table: "
 			for idx in range(0, self.realNumOfCharactersInImageSegment):
-				tmpTuple = struct.unpack_from('I', fonBytesBuff, offsInFonFile)	 # unsigned integer 4 bytes
+				tmpTuple = struct.unpack_from('i', fonBytesBuff, offsInFonFile)	 # unsigned integer 4 bytes
 				tmpXOffset = tmpTuple[0]
 				offsInFonFile += 4
 

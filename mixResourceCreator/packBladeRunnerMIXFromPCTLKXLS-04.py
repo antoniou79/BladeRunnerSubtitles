@@ -46,12 +46,8 @@ supportedDialogueSheets = ['INGQUO_E.TRE', 'WSTLGO_E.VQA', 'BRLOGO_E.VQA', 'INTR
 # TAHOMA means both TAHOMA (their translation should be identical (although in the original they have minor differences but they don't affect anything)
 # We use a single naming for TAHOMA here because both TAHOMA18 and TAHOMA24 are used for ENDCRED.TRE
 # The TRE files that are identically named to the originals are supposed to override them (needs ScummVM compatible functionality for that)
-# TODO ASDF for now we except the TAHOMA type fonts and the corresponding TRE's until we have a proper mapping for those in the configuration file, and a proper extended (or new) font for them
-# TODO ASDF also removed KIACRED.TRE pending resolution for special font characters (2)
-#       FONTS REMOVED: ('ENDCRED.TRE', 'TAHOMA'),
-#       FONTS REMOVED: ('SCORERS.TRE', 'TAHOMA'),
 
-supportedTranslationSheets = [('OPTIONS.TRE', 'KIA6PT'), ('DLGMENU.TRE', 'KIA6PT'), ('VK.TRE', 'KIA6PT'), ('CLUES.TRE', 'KIA6PT'), ('CRIMES.TRE', 'KIA6PT'), ('ACTORS.TRE', 'KIA6PT'), ('HELP.TRE', 'KIA6PT'), ('AUTOSAVE.TRE', 'KIA6PT'), ('ERRORMSG.TRE', 'KIA6PT'), ('SPINDEST.TRE', 'KIA6PT'), ('KIA.TRE', 'KIA6PT'),  ('KIACRED.TRE', 'KIA6PT'), ('CLUETYPE.TRE', 'KIA6PT') , ('POGO.TRE', 'KIA6PT')]
+supportedTranslationSheets = [('OPTIONS.TRE', 'KIA6PT'), ('DLGMENU.TRE', 'KIA6PT'), ('SCORERS.TRE', 'TAHOMA'), ('VK.TRE', 'KIA6PT'), ('CLUES.TRE', 'KIA6PT'), ('CRIMES.TRE', 'KIA6PT'), ('ACTORS.TRE', 'KIA6PT'), ('HELP.TRE', 'KIA6PT'), ('AUTOSAVE.TRE', 'KIA6PT'), ('ERRORMSG.TRE', 'KIA6PT'), ('SPINDEST.TRE', 'KIA6PT'), ('KIA.TRE', 'KIA6PT'),  ('KIACRED.TRE', 'KIA6PT'), ('CLUETYPE.TRE', 'KIA6PT'), ('ENDCRED.TRE', 'TAHOMA'), ('POGO.TRE', 'KIA6PT')]
 # The FON files that are identically named to the originals are supposed to override them (needs ScummVM compatible functionality for that)
 supportedOtherFilesForMix = [defaultSubtitlesFontName, 'KIA6PT.FON', 'TAHOMA18.FON', 'TAHOMA24.FON'] # , '10PT.FON'] # we don't deal with 10PT.FON since it's not used -- TODO verify this.
 
@@ -398,6 +394,7 @@ def translateQuoteToAsciiProper(cellObj, pSheetName):
 				break
 	elif pSheetName in [x[0] for x in supportedTranslationSheets]:
 		pertinentFontType = ''
+        #[treAndFontTypeTuple for treAndFontTypeTuple in supportedTranslationSheets if treAndFontTypeTuple[0] == pSheetName]
 		for (tmpSheetName, tmpFontType) in supportedTranslationSheets:
 			if tmpSheetName == pSheetName:
 				pertinentFontType = tmpFontType

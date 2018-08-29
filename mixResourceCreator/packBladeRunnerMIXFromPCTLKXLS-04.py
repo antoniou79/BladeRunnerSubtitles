@@ -356,6 +356,7 @@ def outputMIX():
 				break
 
 		outMIXFile.close()
+		print "TOTAL RESOURCES IN MIX: %d" % (numOfFiles)
 	return
 #
 # END FOR MIX FILE

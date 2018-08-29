@@ -33,6 +33,8 @@
 #
 # Let's assume an Input image with only a row of all character glyphs (no double rows...)
 # BLADE RUNNER:
+# TODO: A way to differentiate between corrupted TAHOMA18 and extended TAHOMA18 (user created)
+# TODO: Maybe instead of removing transparency from glyph ROW image (transparency threshold= 0), use a grey gradient for semitransparent pixels for the cases of TAHOMA fonts (and maybe the subtitle ones too)
 # TODO: A way to export game fonts to png image (in order to be able to create new expanded fonts keeping glyph consistency!)
 #           Also override the corruption in TAHOMA18 while exporting
 # TODO: Re-Check the order of fonts in (in-game resource font files) TAHOMA18 (stored corrupted) and TAHOMA24 (in good condition).

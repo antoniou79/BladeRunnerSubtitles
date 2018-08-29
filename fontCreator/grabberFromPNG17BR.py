@@ -138,6 +138,7 @@ class grabberFromPNG:
 	listOfWidths = []
 	listOfHeights = [] # new for Blade Runner support
 	listOfLetterBoxes = []
+	properListOfLetterBoxes = []
 	startColOfPrevFontLetter = 0 # new for Blade Runner support
 	tabSpaceWidth = 0
 	startOfAllLettersIncludingTheExtraDoubleAndWithKern = 0
@@ -339,6 +340,7 @@ class grabberFromPNG:
 		del self.listOfWidths[:]
 		del self.listOfHeights[:]
 		del self.listOfLetterBoxes[:]
+		del self.properListOfLetterBoxes[:]
 		del self.listOfXOffsets[:] # new for Blade Runner support
 		del self.listOfYOffsets[:] # new for Blade Runner support
 #		 del self.listOfExplicitKerning[:] # don't clean these up
@@ -697,7 +699,13 @@ class grabberFromPNG:
 						#
 						# Kerning of the first letter font is '1' for Tahoma18 (when shadowed from every side (the left side shadow reduces the kerning), otherwise it would be 2) -- TODO for now this should be a launch parameter
 						# Y offset should be calculated from the top row of the heighest font
-						kIncIndx = 0
+						#kIncIndx = 0
+						## aux list because the order of the fonts in our overrideEncoding may not match the real order in the ascii table
+                        #listOfWriteableEntries = [ (0,0,0,0,0) for i in range(0, numberOfEntriesInFontTable)] # create a list of placeholders for the number of entries we need to write
+						#print " *************** DBG **************"
+						#print listOfWriteableEntries
+						#print " *************** DBG **************"
+						del self.properListOfLetterBoxes[:]
 						for i in range(0, numberOfEntriesInFontTable):	# blocks of 20 bytes
 							# 20 byte block
 							# 4 bytes x offset (from what ref point? is this for kerning ) - CAN THIS BE NEGATIVE?
@@ -724,9 +732,17 @@ class grabberFromPNG:
 								# TODO maybe conform more with game's format: Eg Tahoma24.fon (native game resource) does not always point to the second character font offset for dummy entries, but to the latest offset and only additionally sets the x-offset property (all others are 0) - eg look for 0x74c9 offsets (byte sequence 0xc9 0x74)
 								dummyCharFontImageConstOffset = maxFontWidth * maxFontHeight; # const. actual offset in bytes is twice that. This counts in words (2-bytes)	 - This points to the first valid entry but with properties that make it translate as a space or dummy(?)
 								lastImageSegmentOffset = maxFontWidth * maxFontHeight; # actual offset in bytes is twice that. This counts in words (2-bytes)
+                                #listOfWriteableEntries[0] = (tmpXOffsetToWrite, tmpYOffsetToWrite, tmpWidthToWrite, tmpHeightToWrite, tmpDataOffsetToWrite)
 							else:
 								if (i-1) in self.targetLangOrderAndListOfForeignLettersAsciiValues:
 									# then this is an actual entry
+									# i-1 is the order of an ascii character, that should be placed in the next slot in the output FON file
+									# but this ascii character in the input overrideEncoding could be not it the same i spot -- because of the correspondance to an out-of-order PNG row file
+									kIncIndxLst = [item for item in enumerate(self.targetLangOrderAndListOfForeignLettersAsciiValues[1:], 0) if item[1] == (i-1) ]
+									kIncIndx = kIncIndxLst[0][0]
+									#kIncIndx = self.targetLangOrderAndListOfForeignLettersAsciiValues.index(i-1)
+									#print kIncIndxLst
+									print kIncIndx, i-1
 									#print i, ": actual entry index of ascii char", (i-1)," width:", self.listOfWidths[kIncIndx]
 									#print "Self explicit kerning list: " , self.listOfExplicitKerning
 									if len(self.listOfExplicitKerning ) > 0:
@@ -755,7 +771,11 @@ class grabberFromPNG:
 									tmpDataOffsetToWrite = pack('I', lastImageSegmentOffset) #
 									targetFontFile.write(tmpDataOffsetToWrite)
 									lastImageSegmentOffset = lastImageSegmentOffset +  self.listOfWidths[kIncIndx]  * self.listOfHeights[kIncIndx]
-									kIncIndx = kIncIndx + 1 # increases only for valid characters
+									#kIncIndx = kIncIndx + 1 # increases only for valid characters
+									#
+									# populate self.properListOfLetterBoxes here
+									#
+									self.properListOfLetterBoxes.append(self.listOfLetterBoxes[kIncIndx])
 								else:
 									#
 									#print i, ": phony entry"
@@ -812,7 +832,7 @@ class grabberFromPNG:
 						#
 						# If we have a character with explicit width increment (y) we should add columns of transparent colored pixels at the end (so since this is done by row, we should add y number of transparent pixels at the end of each row)
 						kIncIndx = 1 # start after the first glyph (which is DOUBLE)
-						for (c_startCol, c_startRow, c_endCol, c_endRow) in self.listOfLetterBoxes[0:]:
+						for (c_startCol, c_startRow, c_endCol, c_endRow) in self.properListOfLetterBoxes[0:]:
 							#print (c_startCol, c_startRow, c_endCol, c_endRow),'for letter ', self.targetLangOrderAndListOfForeignLettersAsciiValues[kIncIndx]
 							explicitWidthIncrementVal = 0
 							if len(self.listOfWidthIncrements ) > 0:

@@ -353,11 +353,23 @@ def inputMIXExtractTREs(inputMIXpath, excelOutBook = None):
 										n+=1
 										for m, e1 in enumerate(thisTreFile.stringEntriesLst, n):
 											sh.write(m, 0, e1[0])
-											# TODO ASDF FIX THIS WORKAROUND WITH PROPER REPLACEMENT BASED ON FONT and overrideEncoding (if present)!!!
-											objUTF8Safe = e1[1]
-											objUTF8Safe = objUTF8Safe.replace('\x81','?') #'ü'
-											objUTF8Safe = objUTF8Safe.replace('\x82','?') #'é'
-											sh.write(m, 1, objUTF8Safe)
+											objStr = e1[1]
+											#print type (objUTF8SafeStr) # the type is STR here
+											# python strings are immutable (can't replace characters) but we have an issue with certain special characters in the ORIGINAL TRE (kiacred and endcred)
+											# (they are out of their order from their proper order in windwos-1252)
+											# so we need to create a new string.
+											objUTF8SafeStr = ""
+											for i in range(0, len(objStr)):
+												if (objStr[i] == '\x81'):
+													objUTF8SafeStr += 'ü'
+												elif (objStr[i] == '\x82'):
+													objUTF8SafeStr += 'é'
+												else:
+													objUTF8SafeStr += objStr[i]
+											#objUTF8Safe = objUTF8Safe.replace('\x81',u'u') #'ü' # this does not work
+											#objUTF8Safe = objUTF8Safe.replace('\x82',u'e') #'é' # this does not work
+											objUTF8Unicode = unicode(objUTF8SafeStr, 'utf-8')
+											sh.write(m, 1, objUTF8Unicode)
 
 
 									#for tupleIdString in thisTreFile.stringEntriesLst:

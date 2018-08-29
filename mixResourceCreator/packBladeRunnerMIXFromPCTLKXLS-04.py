@@ -6,6 +6,7 @@
 # Works with Excel version outSpeech-15-06-2018-1856-TranslatingComms-080.xls and above
 #
 # TODO Support at least one translation too (ie Greek)
+# Print a warning if packing a TRE without the corresponding font(s) -- only a warning though
 #
 import os, sys, shutil
 import ctypes
@@ -49,9 +50,8 @@ supportedDialogueSheets = ['INGQUO_E.TRE', 'WSTLGO_E.VQA', 'BRLOGO_E.VQA', 'INTR
 # TODO ASDF also removed KIACRED.TRE pending resolution for special font characters (2)
 #       FONTS REMOVED: ('ENDCRED.TRE', 'TAHOMA'),
 #       FONTS REMOVED: ('SCORERS.TRE', 'TAHOMA'),
-#       FONTS REMOVED: ('KIACRED.TRE', 'KIA6PT')
 
-supportedTranslationSheets = [('OPTIONS.TRE', 'KIA6PT'), ('DLGMENU.TRE', 'KIA6PT'), ('VK.TRE', 'KIA6PT'), ('CLUES.TRE', 'KIA6PT'), ('CRIMES.TRE', 'KIA6PT'), ('ACTORS.TRE', 'KIA6PT'), ('HELP.TRE', 'KIA6PT'), ('AUTOSAVE.TRE', 'KIA6PT'), ('ERRORMSG.TRE', 'KIA6PT'), ('SPINDEST.TRE', 'KIA6PT'), ('KIA.TRE', 'KIA6PT'), ('CLUETYPE.TRE', 'KIA6PT') , ('POGO.TRE', 'KIA6PT')]
+supportedTranslationSheets = [('OPTIONS.TRE', 'KIA6PT'), ('DLGMENU.TRE', 'KIA6PT'), ('VK.TRE', 'KIA6PT'), ('CLUES.TRE', 'KIA6PT'), ('CRIMES.TRE', 'KIA6PT'), ('ACTORS.TRE', 'KIA6PT'), ('HELP.TRE', 'KIA6PT'), ('AUTOSAVE.TRE', 'KIA6PT'), ('ERRORMSG.TRE', 'KIA6PT'), ('SPINDEST.TRE', 'KIA6PT'), ('KIA.TRE', 'KIA6PT'),  ('KIACRED.TRE', 'KIA6PT'), ('CLUETYPE.TRE', 'KIA6PT') , ('POGO.TRE', 'KIA6PT')]
 # The FON files that are identically named to the originals are supposed to override them (needs ScummVM compatible functionality for that)
 supportedOtherFilesForMix = [defaultSubtitlesFontName, 'KIA6PT.FON', 'TAHOMA18.FON', 'TAHOMA24.FON'] # , '10PT.FON'] # we don't deal with 10PT.FON since it's not used -- TODO verify this.
 

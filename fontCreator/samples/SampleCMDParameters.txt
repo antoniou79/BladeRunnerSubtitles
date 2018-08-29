@@ -1,1 +1,0 @@
-python2.7 grabberFromPNG17BR.py -im Tahoma_18ShdwTranspThreshZero003-G5.png -om SUBTLS_E.FON -pxLL 42 -pxTT 30 -pxKn 1 -pxWS 7

@@ -1,1 +1,1 @@
--im KIA6PT.FON-Ext011TranspZeroThresh.png -om SUBTLS_E.FON -pxLL 14 -pxTT 15 -pxKn 1 -pxWS 6 -pxYo 1 --noSpecialGlyphs --noAutoTabCalculation
+python2.7 grabberFromPNG17BR.py -im KIA6PT.FON-Ext012TranspZeroThresh0002.png -oe ./samples/overrideEncodingKIA6PT.txt -om KIA6PT.FON -pxLL 14 -pxTT 15 -pxKn 1 -pxWS 4 -pxYo 1 --noAutoTabCalculation

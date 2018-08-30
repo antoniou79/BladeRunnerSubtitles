@@ -35,6 +35,16 @@
 # BLADE RUNNER:
 # TODO: A way to differentiate between corrupted TAHOMA18 and extended TAHOMA18 (user created)
 # TODO: Maybe instead of removing transparency from glyph ROW image (transparency threshold= 0), use a grey gradient for semitransparent pixels for the cases of TAHOMA fonts (and maybe the subtitle ones too)
+#           Create the font row in GIMP - add layers for shadows if necessary
+#           Merge all layers (maintaining an alpha channel for the background)
+#           Select all and float, which should create a floating selection with all the letters
+#           Promote that to layer and duplicate it.
+#           Choose one of the duplicated layers and COLORIFY it to PITCH BLACK
+#               Set the transparency threshold of THAT black layer to 0
+#           Put this layer under the other and merge the visible layers.
+#           This should get rid of semi-transparent pixels while maintaining the "aliasing" effect. There could be a better way but this should work ok.
+
+
 # TODO: A way to export game fonts to png image (in order to be able to create new expanded fonts keeping glyph consistency!)
 #           Also override the corruption in TAHOMA18 while exporting
 # TODO: Re-Check the order of fonts in (in-game resource font files) TAHOMA18 (stored corrupted) and TAHOMA24 (in good condition).

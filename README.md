@@ -7,6 +7,7 @@ Some tools written in Python 2.7 to help add support for subtitles in Westwood's
 (requires python lib *xlwt*, *wave*)
 A tool to gather all the speech audio filenames in an Excel file which will include a column with links to the audio file location on the PC. By Ctrl+MouseClick on that column's entries you should be able to listen to the corresponding wav file.
 The output excel file *out.xls* should help with the transcription of all the spoken *in-game* quotes. It also provides extra quote information such as the corresponding actor ID and quote ID per quote.
+
 Note 1: A lot of extra information has been added to the output Excel file maintained for the English transcription, such as whether a quote is unused or untriggered, the person a quote refers to (when applicable), as well as extra quotes that are not separate Audio files (AUD) in the game's archives but are part of a video file (VQA). Therefore, this tool is provided here mostly for archiving purposes.
 
 Note 2: Using the "-xwav" switch, this tool will export __ALL__ game's audio files (that are either speech or speech-related) in a WAV format. This is expected to take up quite a lot of your HDD space.
@@ -59,7 +60,7 @@ The overrideEncoding.txt is a text file that contains the following:
     * Don't use space(s) between the tuples!
 
 __For the exporting the game fonts mode__, the valid syntax expects only one (1) argument:
-1. folderpathForMIXFiles: is the path where the game's MIX files are located (STARTUP.MIX is required). The exported font files should be: 10PT.FON, TAHOMA18.FON, TAHOMA24.FON and KIA6PT.FON.
+1. folderpathForMIXFiles: is the path where the game's MIX files are located (STARTUP.MIX is required). The exported font files will be: 10PT.FON, TAHOMA18.FON, TAHOMA24.FON and KIA6PT.FON.
 
 __For the creation of subtitles' font mode__, there are six (6) mandatory launch arguments for the fontCreator tool:
 1. imageRowPNGFilename: is the filename of the input PNG image file which should contain a row of (preferably) tab separated glyphs. Example: "Tahoma_18ShdwTranspThreshZero003-G5.png". Keep in mind that:

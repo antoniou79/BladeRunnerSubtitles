@@ -1036,9 +1036,9 @@ if __name__ == '__main__':
 			print "Preparatory steps:"
 			print "1. Put overrideEncoding.txt file in the same folder with this tool. (Recommended, but not obligatory step)"
 			print "--------------------"
-			print "Valid syntax A:"
+			print "Valid syntax A - export game fonts:"
 			print "%s -ip [folderpath_for_MIX_Files]\n" % (app_name)
-			print "Valid syntax B:"
+			print "Valid syntax B - create subtitle font:"
 			print "%s -im [image_Row_PNG_Filename] -om [output_FON_filename] -pxLL [minSpaceBetweenLettersInRowLeftToLeft] -pxTT [minSpaceBetweenLettersInColumnTopToTop] -pxKn [kerningForFirstDummyFontLetter] -pxWS [whiteSpaceWidthInPixels]\n" % (app_name)    # deductKerningPixels"
 			print "The -ip switch has an argument that is the path for the input (MIX) files folder (can be the same as the Blade Runner installation folder)."
 			print "The -oe switch has an argument that is the input overrideEncoding file to use for the particular font creation."

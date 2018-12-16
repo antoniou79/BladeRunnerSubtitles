@@ -7,10 +7,13 @@ Some tools written in Python 2.7 to help add support for subtitles in Westwood's
 (requires python lib *xlwt*, *wave*)
 A tool to gather all the speech audio filenames in an Excel file which will include a column with links to the audio file location on the PC. By Ctrl+MouseClick on that column's entries you should be able to listen to the corresponding wav file.
 The output excel file *out.xls* should help with the transcription of all the spoken *in-game* quotes. It also provides extra quote information such as the corresponding actor ID and quote ID per quote.
-Note: A lot of extra information has been added to the output Excel file maintained for the English transcription, such as whether a quote is unused or untriggered, the person a quote refers to (when applicable), as well as extra quotes that are not separate Audio files (AUD) in the game's archives but are part of a video file (VQA). Therefore, this tool is provided here mostly for archiving purposes.
+Note 1: A lot of extra information has been added to the output Excel file maintained for the English transcription, such as whether a quote is unused or untriggered, the person a quote refers to (when applicable), as well as extra quotes that are not separate Audio files (AUD) in the game's archives but are part of a video file (VQA). Therefore, this tool is provided here mostly for archiving purposes.
+
+Note 2: Using the "-xwav" switch, this tool will export __ALL__ game's audio files (that are either speech or speech-related) in a WAV format. This is expected to take up quite a lot of your HDD space.
+
 Usage:
 ```
-python2.7 sortBladeRunnerWavs02.py -ip <folderpath_for_TLK_Files> -op <folderpath_for_extracted_wav_Files> -m <stringPathToReplaceFolderpathInExcelLinks>
+python2.7 sortBladeRunnerWavs02.py -ip <folderpath_for_TLK_Files> -op <folderpath_for_extracted_wav_Files> -m <stringPathToReplaceFolderpathInExcelLinks> [-xwav] [-xtre]
 ```
 The tool __requires__ the actornames.txt file, which is included in the samples folder, to be in the same folder as the tool's source (.py) file.
 
@@ -26,22 +29,26 @@ The tool __requires__ the actornames.txt file, which is included in the samples 
 
 ## fontCreator (grabberFromPNG##BR)
 (requires python image library *PIL*)
-A tool to support the creation of a font file (FON) for use with (currently) a modified version of ScummVM's BladeRunner engine (WIP) in order to resolve various issues with the available fonts (included in the game's own resource files). These issues include alignment, kerning, corrupted format, limited charset and unsupported characters -- especially for languages with too many non-latin symbols in their alphabet.
+A tool to support __both__ the extraction of fonts from the game __and__ the creation of a font file (FON) for use with (currently) a modified version of ScummVM's BladeRunner engine (WIP) in order to resolve various issues with the available fonts (included in the game's own resource files). These issues include alignment, kerning, corrupted format, limited charset and unsupported characters -- especially for languages with too many non-Latin symbols in their alphabet.
 This font tool's code is based off the Monkey Island Special Edition's Translator (https://github.com/ShadowNate/MISETranslator).
 Usage:
 ```
-python2.7 grabberFromPNG17BR.py <imageRowPNGFilename> <targetFONfilename> <minSpaceBetweenLettersInRowLeftToLeft> <minSpaceBetweenLettersInColumnTopToTop> <kerningForFirstDummyFontGlyph> <whiteSpaceWidthPx>
+Syntax A - To export game fonts:
+python2.7 grabberFromPNG17BR.py -ip <folderpathForMIXFiles>
+
+Syntax B - To create subtitle font:
+python2.7 grabberFromPNG17BR.py -im <imageRowPNGFilename> -om <targetFONfilename> -pxLL <minSpaceBetweenLettersInRowLeftToLeft> -pxTT <minSpaceBetweenLettersInColumnTopToTop> -pxKn <kerningForFirstDummyFontLetter> -pxWS <whiteSpaceWidthInPixels>
 ```
-The tool also __requires__ an overrideEncoding.txt file to be in the same folder as the tool's source (.py) file.
+This tool also __requires__ an overrideEncoding.txt file to be in the same folder as the tool's source (.py) file.
 The overrideEncoding.txt is a text file that contains the following:
-1. The name of the ascii codepage that should be used for the character fonts (eg windows-1253).
+1. The name of the ASCII codepage that should be used for the character fonts (eg windows-1253).
 2. A string with all the printable characters that will be used in-game, from the specified codepage. Keep in mind that:
     * The first such character (typically this is the '!' character) should be repeated twice!
     * All characters must belong to the specified codepage.
-    * The order that the characters appear in the string should match their order in the ascii table of the codepage.
+    * The order that the characters appear in the string should match their order in the ASCII table of the codepage.
     * You don't need to use all the characters in the specified codepage.
-    * For any special characters that don't appear in the target codepage (eg ñ, é, í, â don't appear in the Greek codepage), you'll have to decide on an ascii value for them (one not used by another character that will appear in-game). 
-    In the all-characters string you should use as placeholders the actual characters from the specified codepage that correspond to these ascii values you have selected, and in the proper order.
+    * For any special characters that don't appear in the target codepage (eg ñ, é, í, â don't appear in the Greek codepage), you'll have to decide on an ASCII value for them (one not used by another character that will appear in-game). 
+    In the all-characters string you should use as placeholders the actual characters from the specified codepage that correspond to these ASCII values you have selected, and in the proper order.
     * The text file should be saved in a UTF-8 encoding (no BOM)
     * There is a sample of such file in the source folder for the fontCreator tool
 3. A list of comma separated tuples that specifies a characters and its manually set kerning (x-offset) in pixels. Kerning can have integer (positive or negative) values. This list is optional and can be skipped if you put a '-' instead of a list.
@@ -51,7 +58,10 @@ The overrideEncoding.txt is a text file that contains the following:
     * Example: i:0,j:1,l:1
     * Don't use space(s) between the tuples!
 
-There are six (6) mandatory launch arguments for the fontCreator tool:
+__For the exporting the game fonts mode__, the valid syntax expects only one (1) argument:
+1. folderpathForMIXFiles: is the path where the game's MIX files are located (STARTUP.MIX is required). The exported font files should be: 10PT.FON, TAHOMA18.FON, TAHOMA24.FON and KIA6PT.FON.
+
+__For the creation of subtitles' font mode__, there are six (6) mandatory launch arguments for the fontCreator tool:
 1. imageRowPNGFilename: is the filename of the input PNG image file which should contain a row of (preferably) tab separated glyphs. Example: "Tahoma_18ShdwTranspThreshZero003-G5.png". Keep in mind that:
     * The first glyph should be repeated here too, as in the overrideEncoding.txt file.
 	* Background should be transparent.
@@ -62,9 +72,9 @@ There are six (6) mandatory launch arguments for the fontCreator tool:
 3. minSpaceBetweenLettersInRowLeftToLeft: This is a length (positive integer) in pixels that indicates the __minimum__ distance between the left-most side of a glyph and the left-most side of the immediate subsequent glyph in the input image PNG (row of glyphs) file.
 This basically tells the tool how far (in the x axis) it can search for pixels that belong to the same glyph). You can input an approximate value here and adjust it based on the output of the tool (the tool should be able to detect ALL the glyphs in the PNG row image file and it will report how many it detected in its output)
 4. minSpaceBetweenLettersInColumnTopToTop: This is a positive integer in pixels that indicates the __minimum__ distance between the top-most pixel of a glyph and the top-most pixel of a glyph on another row of the input image file.
-It is highly recommended though that the input image file should contain only a single row of glyphs and this value should be higher than the maximum height among the glyphs, typically this should be set to approximately double the maximum height of glyph.
-5. kerningForFirstDummyFontGlyph: This is an integer that explicitly indicates the kerning, ie offset in pixels (on the x-axis) of the first glyph (the one that is repeated twice). This can be measured by observing the indent that your image processing app adds when you enter the first glyph (typically it should be only a few pixels)
-6. whiteSpaceWidthPx: This is a positive integer value that sets the width in pixels for the single white space between words for the subtitles in-game.
+It is highly recommended, though, that the input image file should contain only a single row of glyphs and this value should be higher than the maximum height among the glyphs, typically this should be set to approximately double the maximum height of glyph.
+5. kerningForFirstDummyFontGlyph: This is an integer that explicitly indicates the kerning, ie. offset in pixels (on the x-axis) of the first glyph (the one that is repeated twice). This can be measured by observing the indent that your image processing app adds when you enter the first glyph (typically it should be only a few pixels)
+6. whiteSpaceWidthInPixels: This is a positive integer value that sets the width in pixels for the single white space between words for the subtitles in-game.
 
 # Credits and Special Thanks
 - All the developer guys from the ScummVM (https://github.com/scummvm/scummvm) team, and especially the ones involved in the implementation of the BladeRunner engine for ScummVM (madmoose, peterkohaut, sev and everyone else).

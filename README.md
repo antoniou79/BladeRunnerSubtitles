@@ -66,8 +66,8 @@ __For the creation of subtitles' font mode__, there are six (6) mandatory launch
 1. imageRowPNGFilename: is the filename of the input PNG image file which should contain a row of (preferably) tab separated glyphs. Example: "Tahoma_18ShdwTranspThreshZero003-G5.png". Keep in mind that:
     * The first glyph should be repeated here too, as in the overrideEncoding.txt file.
 	* Background should be transparent.
-	* [TBC] all colors used in the character glyphs should not have any transparency value (eg from Gimp 2, set Layer->Transparency->Threshold alpha to 0).
-    * If you use special glyphs that are not in the specified ascii codepage (eg ñ, é, í, â don't appear in the Greek codepage), then in this image file you should use the actual special glyphs - put them at the position of the placeholder characters in your "all-characters" string that you've specified in the overrideEncoding.txt file.
+	* All colors used in the character glyphs should not have any transparency value (eg from Gimp 2, set Layer->Transparency->Threshold alpha to 0). There's no partial transparency supported by the game. A pixel will either by fully transparent or fully opaque.
+    * If you use special glyphs that are not in the specified ASCII codepage (eg ñ, é, í, â don't appear in the Greek codepage), then in this image file you should use the actual special glyphs - put them at the position of the placeholder characters in your "all-characters" string that you've specified in the overrideEncoding.txt file.
 2. targetFONfilename: Example: "SUBTLS_E.FON". Keep in mind that:
     * As of yet, only the SUBTLS_E.FON is supported by a modified (non-official) version of the BladeRunner ScummVM engine.
 3. minSpaceBetweenLettersInRowLeftToLeft: This is a length (positive integer) in pixels that indicates the __minimum__ distance between the left-most side of a glyph and the left-most side of the immediate subsequent glyph in the input image PNG (row of glyphs) file.
@@ -76,6 +76,23 @@ This basically tells the tool how far (in the x axis) it can search for pixels t
 It is highly recommended, though, that the input image file should contain only a single row of glyphs and this value should be higher than the maximum height among the glyphs, typically this should be set to approximately double the maximum height of glyph.
 5. kerningForFirstDummyFontGlyph: This is an integer that explicitly indicates the kerning, ie. offset in pixels (on the x-axis) of the first glyph (the one that is repeated twice). This can be measured by observing the indent that your image processing app adds when you enter the first glyph (typically it should be only a few pixels)
 6. whiteSpaceWidthInPixels: This is a positive integer value that sets the width in pixels for the single white space between words for the subtitles in-game.
+
+A suggested method of creating decent looking PNG with the row of glyphs for your subtitles' font is the following:
+    * Create the font row in __GIMP__ 
+        * Start with a __new__ empty image, with transparent background. Choose a large enough canvas width (you can adjust it later)     
+        * Paste as a new layer a tab separated alphanumeric sequence with all your glyphs (as specified above). Choose white as the font's color.
+	* Adjust your canvas' width and height to make sure all the glyphs are within its borders.
+    * Add layers for shadows if necessary (recommended) by duplicating the original layer with the (white colored) glyphs to create layers that would be used for the shadow effect. Those layers should be __colorified__ as black and placed behind the original layer, displaced by one (1) pixel from eg. the top, right, left, and bottom (it's recommended to do this for all of those four).
+    * __Merge all visible__ layers (maintaining an alpha channel for the background)
+    * __Select all__ and __float the selection__, which should create a floating selection with all the letter glyphs.
+    * __Promote that selection to a layer__ and __duplicate__ it.
+    * Choose one of the duplicated layers and __COLORIFY__ it to pitch black.
+        * __Set the transparency threshold__ of this black layer to 0.
+    * Finally, place this completely black colored layer underneath the other one and __merge the visible__ layers.
+    * Export your image to a PNG file. 
+This should get rid of semi-transparent pixels while maintaining the "aliasing" effect. 
+There could be a better way but this should work ok.
+
 
 # Credits and Special Thanks
 - All the developer guys from the ScummVM (https://github.com/scummvm/scummvm) team, and especially the ones involved in the implementation of the BladeRunner engine for ScummVM (madmoose, peterkohaut, sev and everyone else).

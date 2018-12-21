@@ -78,18 +78,19 @@ It is highly recommended, though, that the input image file should contain only 
 6. whiteSpaceWidthInPixels: This is a positive integer value that sets the width in pixels for the single white space between words for the subtitles in-game.
 
 A suggested method of creating decent looking PNG with the row of glyphs for your subtitles' font is the following:
-    * Create the font row in __GIMP__ 
-        * Start with a __new__ empty image, with transparent background. Choose a large enough canvas width (you can adjust it later)     
-        * Paste as a new layer a tab separated alphanumeric sequence with all your glyphs (as specified above). Choose white as the font's color.
-	* Adjust your canvas' width and height to make sure all the glyphs are within its borders.
-    * Add layers for shadows if necessary (recommended) by duplicating the original layer with the (white colored) glyphs to create layers that would be used for the shadow effect. Those layers should be __colorified__ as black and placed behind the original layer, displaced by one (1) pixel from eg. the top, right, left, and bottom (it's recommended to do this for all of those four).
-    * __Merge all visible__ layers (maintaining an alpha channel for the background)
-    * __Select all__ and __float the selection__, which should create a floating selection with all the letter glyphs.
+1. Create the font row in __GIMP__ 
+    * Start with a __new__ empty image, with transparent background. Choose a large enough canvas width (you can adjust it later)     
+    * Paste as a new layer a tab separated alphanumeric sequence with all your glyphs (as specified above). Choose white as the font's color.
+    * Adjust your canvas' width and height to make sure all the glyphs are within its borders.
+2. Add layers for shadows if necessary (recommended) by duplicating the original layer with the (white colored) glyphs to create layers that would be used for the shadow effect. Those layers should be __colorified__ as black and placed behind the original layer, displaced by one (1) pixel from eg. the top, right, left, and bottom (it's recommended to do this for all of those four).
+3. __Merge all visible__ layers (maintaining an alpha channel for the background)
+4. __Select all__ and __float the selection__, which should create a floating selection with all the letter glyphs.
     * __Promote that selection to a layer__ and __duplicate__ it.
-    * Choose one of the duplicated layers and __COLORIFY__ it to pitch black.
-        * __Set the transparency threshold__ of this black layer to 0.
-    * Finally, place this completely black colored layer underneath the other one and __merge the visible__ layers.
-    * Export your image to a PNG file. 
+5. Choose one of the duplicated layers and __COLORIFY__ it to pitch black.
+    * __Set the transparency threshold__ of this black layer to 0.
+6. Finally, place this completely black colored layer underneath the other one and __merge the visible__ layers.
+7. Export your image to a PNG file. 
+    
 This should get rid of semi-transparent pixels while maintaining the "aliasing" effect. 
 There could be a better way but this should work ok.
 

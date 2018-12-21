@@ -8,7 +8,7 @@ Some tools written in Python 2.7 to help add support for subtitles in Westwood's
 A tool to gather all the speech audio filenames in an Excel file which will include a column with links to the audio file location on the PC. By Ctrl+MouseClick on that column's entries you should be able to listen to the corresponding wav file.
 The output excel file *out.xls* should help with the transcription of all the spoken *in-game* quotes. It also provides extra quote information such as the corresponding actor ID and quote ID per quote.
 
-Note 1: A lot of extra information has been added to the output Excel file maintained for the English transcription, such as whether a quote is unused or untriggered, the person a quote refers to (when applicable), as well as extra quotes that are not separate Audio files (AUD) in the game's archives but are part of a video file (VQA). Therefore, this tool is provided here mostly for archiving purposes.
+Note 1: A lot of extra information has been added to the output Excel file maintained for the English transcription, such as whether a quote is unused or untriggered, the person a quote refers to (when applicable), as well as extra quotes that are not separate Audio files (AUD) in the game's archives but are part of a video file (VQA) or were text resources (TRE) for dialogue menus, UI etc. Therefore, this tool is provided here mostly for archiving purposes.
 
 Note 2: Using the "-xwav" switch, this tool will export __ALL__ game's audio files (that are either speech or speech-related) in a WAV format. This is expected to take up quite a lot of your HDD space.
 
@@ -43,19 +43,19 @@ python2.7 grabberFromPNG17BR.py -im <imageRowPNGFilename> -om <targetFONfilename
 This tool also __requires__ an overrideEncoding.txt file to be in the same folder as the tool's source (.py) file.
 The overrideEncoding.txt is a text file that contains the following:
 1. The name of the ASCII codepage that should be used for the character fonts (eg windows-1253).
-2. A string with all the printable characters that will be used in-game, from the specified codepage. Keep in mind that:
+2. An "all-characters" string with all the printable characters that will be used in-game, from the specified codepage. Keep in mind that:
     * The first such character (typically this is the '!' character) should be repeated twice!
     * All characters must belong to the specified codepage.
     * The order that the characters appear in the string should match their order in the ASCII table of the codepage.
-    * You don't need to use all the characters in the specified codepage.
-    * For any special characters that don't appear in the target codepage (eg ñ, é, í, â don't appear in the Greek codepage), you'll have to decide on an ASCII value for them (one not used by another character that will appear in-game). 
-    In the all-characters string you should use as placeholders the actual characters from the specified codepage that correspond to these ASCII values you have selected, and in the proper order.
-    * The text file should be saved in a UTF-8 encoding (no BOM)
-    * There is a sample of such file in the source folder for the fontCreator tool
-3. A list of comma separated tuples that specifies a characters and its manually set kerning (x-offset) in pixels. Kerning can have integer (positive or negative) values. This list is optional and can be skipped if you put a '-' instead of a list.
+    * You don't need to use all the characters of the specified codepage in your "all-characters" string.
+    * For any special characters that don't appear in the target codepage (eg ñ, é, í, â don't appear in the Greek codepage), you'll have to decide on an ASCII value for them (one not used by another character appearing in-game). 
+    In the "all-characters" string you should put as placeholders the actual characters from the specified codepage that correspond to the ASCII values you have decided above; The placeholder characters should also be in the proper order (by their ASCII value) inside the string.
+    * The text file should be saved in a UTF-8 encoding (no BOM).
+    * There is a sample of such file in the source folder for the fontCreator tool.
+3. A list of comma separated tuples where each tuple specifies a character and its manually set kerning (x-offset) in pixels. Kerning can have integer (positive or negative) values. This list is optional and may be skipped, if you put a '-' instead of a list.
     * Example: i:-1
     * Don't use space(s) between the tuples!
-4. A list of comma separated tuples that specifies a characters and its manually set extended width in pixels. This should be a positive integer value. You can skip this list by not writing anything in the file after the previous (manual kerning) list.
+4. A list of comma separated tuples  where each tuple specifies a character and its manually set extended width in pixels. This should be a positive integer value. You can skip this list by not writing anything in the file after the previous (manual kerning) list.
     * Example: i:0,j:1,l:1
     * Don't use space(s) between the tuples!
 
@@ -67,9 +67,9 @@ __For the creation of subtitles' font mode__, there are six (6) mandatory launch
     * The first glyph should be repeated here too, as in the overrideEncoding.txt file.
 	* Background should be transparent.
 	* [TBC] all colors used in the character glyphs should not have any transparency value (eg from Gimp 2, set Layer->Transparency->Threshold alpha to 0).
-    * If you use special glyphs that are not in the specified ascii codepage (eg ñ, é, í, â don't appear in the Greek codepage), then in this image file you should use the actual special glyphs at the position of the placeholder characters you've had in the overrideEncoding.txt file
+    * If you use special glyphs that are not in the specified ascii codepage (eg ñ, é, í, â don't appear in the Greek codepage), then in this image file you should use the actual special glyphs - put them at the position of the placeholder characters in your "all-characters" string that you've specified in the overrideEncoding.txt file.
 2. targetFONfilename: Example: "SUBTLS_E.FON". Keep in mind that:
-    * As of yet only the SUBTLS_E.FON is supported by a modified (non-official) version of the BladeRunner ScummVM engine.
+    * As of yet, only the SUBTLS_E.FON is supported by a modified (non-official) version of the BladeRunner ScummVM engine.
 3. minSpaceBetweenLettersInRowLeftToLeft: This is a length (positive integer) in pixels that indicates the __minimum__ distance between the left-most side of a glyph and the left-most side of the immediate subsequent glyph in the input image PNG (row of glyphs) file.
 This basically tells the tool how far (in the x axis) it can search for pixels that belong to the same glyph). You can input an approximate value here and adjust it based on the output of the tool (the tool should be able to detect ALL the glyphs in the PNG row image file and it will report how many it detected in its output)
 4. minSpaceBetweenLettersInColumnTopToTop: This is a positive integer in pixels that indicates the __minimum__ distance between the top-most pixel of a glyph and the top-most pixel of a glyph on another row of the input image file.
